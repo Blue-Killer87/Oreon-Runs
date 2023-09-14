@@ -1,7 +1,9 @@
+import os
+os.system("py -m pip install boto3")
+
 from kivy.base import runTouchApp
 from kivy.lang import Builder
 
-import plyer
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
 
@@ -57,13 +59,14 @@ RelativeLayout:
     Toolbar:
         top: root.top
         Button:
-            text: "Move to Lille, France"
-            on_release: mapview.center_on(50.6394, 3.057)
+            text: "Praha, Česká republika"
+            on_release: mapview.center_on(49.9, 14.4)
+            on_release: 
         Button:
-            text: "Move to Sydney, Autralia"
-            on_release: mapview.center_on(-33.867, 151.206)
+            text: "Vesnice"
+            on_release: mapview.center_on(49.1089, 16.6271)     
         Spinner:
-            text: "mapnik"
+            text: "Výběr Map"
             values: MapSource.providers.keys()
             on_text: mapview.map_source = self.text
 
@@ -74,5 +77,5 @@ RelativeLayout:
             text: "Latitude: {}".format(mapview.lat)
     """
 )
-
+    
 runTouchApp(root)
