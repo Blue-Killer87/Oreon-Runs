@@ -1,80 +1,104 @@
-from kivy.base import runTouchApp
 from kivy.lang import Builder
-import os
-os.system("py -m pip install boto3")
+from plyer import gps
+from kivy.app import App
+from kivy.properties import StringProperty
+from kivy.clock import mainthread
+from kivy.utils import platform
 
-if __name__ == '__main__' and __package__ is None:
-    from os import sys, path
+kv = '''
+BoxLayout:
+    orientation: 'vertical'
 
-    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+    Label:
+        text: app.gps_location
 
-root = Builder.load_string(
-    """
-#:import MapSource kivy_garden.mapview.MapSource
+    Label:
+        text: app.gps_status
 
-<Toolbar@BoxLayout>:
-    size_hint_y: None
-    height: '48dp'
-    padding: '4dp'
-    spacing: '4dp'
+    BoxLayout:
+        size_hint_y: None
+        height: '48dp'
+        padding: '4dp'
 
-    canvas:
-        Color:
-            rgba: .2, .2, .2, .6
-        Rectangle:
-            pos: self.pos
-            size: self.size
+        ToggleButton:
+            text: 'Start' if self.state == 'normal' else 'Stop'
+            on_state:
+                app.start(1000, 0) if self.state == 'down' else \
+                app.stop()
+'''
 
-<ShadedLabel@Label>:
-    size: self.texture_size
-    canvas.before:
-        Color:
-            rgba: .2, .2, .2, .6
-        Rectangle:
-            pos: self.pos
-            size: self.size
 
-RelativeLayout:
+class GpsTest(App):
 
-    MapView:
-        id: mapview
-        lat: 49.9
-        lon: 14.4
-        zoom: 8
-        #size_hint: .5, .5
-        #pos_hint: {"x": .25, "y": .25}
+    gps_location = StringProperty()
+    gps_status = StringProperty('Click Start to get GPS location updates')
 
-        #on_map_relocated: mapview2.sync_to(self)
-        #on_map_relocated: mapview3.sync_to(self)
+    def request_android_permissions(self):
+        """
+        Since API 23, Android requires permission to be requested at runtime.
+        This function requests permission and handles the response via a
+        callback.
 
-        MapMarker:
-            lat: 50.6394
-            lon: 3.057
+        The request will produce a popup if permissions have not already been
+        been granted, otherwise it will do nothing.
+        """
+        from android.permissions import request_permissions, Permission
 
-        MapMarker
-            lat: -33.867
-            lon: 151.206
+        def callback(permissions, results):
+            """
+            Defines the callback to be fired when runtime permission
+            has been granted or denied. This is not strictly required,
+            but added for the sake of completeness.
+            """
+            if all([res for res in results]):
+                print("callback. All permissions granted.")
+            else:
+                print("callback. Some permissions refused.")
 
-    Toolbar:
-        top: root.top
-        Button:
-            text: "Praha, Česká republika"
-            on_release: mapview.center_on(49.9, 14.4)
-            on_release: 
-        Button:
-            text: "Vesnice"
-            on_release: mapview.center_on(49.1089, 16.6271)     
-        Spinner:
-            text: "Výběr Map"
-            values: MapSource.providers.keys()
-            on_text: mapview.map_source = self.text
+        request_permissions([Permission.ACCESS_COARSE_LOCATION,
+                             Permission.ACCESS_FINE_LOCATION], callback)
+        # # To request permissions without a callback, do:
+        # request_permissions([Permission.ACCESS_COARSE_LOCATION,
+        #                      Permission.ACCESS_FINE_LOCATION])
 
-    Toolbar:
-        Label:
-            text: "Longitude: {}".format(mapview.lon)
-        Label:
-            text: "Latitude: {}".format(mapview.lat)
-    """
-)
-    
-runTouchApp(root)
+    def build(self):
+        try:
+            gps.configure(on_location=self.on_location,
+                          on_status=self.on_status)
+        except NotImplementedError:
+            import traceback
+            traceback.print_exc()
+            self.gps_status = 'GPS is not implemented for your platform'
+
+        if platform == "android":
+            print("gps.py: Android detected. Requesting permissions")
+            self.request_android_permissions()
+
+        return Builder.load_string(kv)
+
+    def start(self, minTime, minDistance):
+        gps.start(minTime, minDistance)
+
+    def stop(self):
+        gps.stop()
+
+    @mainthread
+    def on_location(self, **kwargs):
+        self.gps_location = '\n'.join([
+            '{}={}'.format(k, v) for k, v in kwargs.items()])
+
+    @mainthread
+    def on_status(self, stype, status):
+        self.gps_status = 'type={}\n{}'.format(stype, status)
+
+    def on_pause(self):
+        gps.stop()
+        return True
+
+    def on_resume(self):
+        gps.start(1000, 0)
+        pass
+
+
+if __name__ == '__main__':
+    GpsTest().run()
