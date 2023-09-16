@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Map Application
+title = GPS test App
 
 # (str) Package name
-package.name = MapApp
+package.name = GPSApp
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -94,7 +94,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
+android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18), ['android.permisssion.ACCESS_FINE_LOCATION'], ['android.permisssion.ACCESS_COARSE_LOCATION ']
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
