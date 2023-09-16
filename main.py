@@ -1,8 +1,7 @@
-import os
-os.system("py -m pip install boto3")
-
 from kivy.base import runTouchApp
 from kivy.lang import Builder
+import os
+os.system("py -m pip install boto3")
 
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
