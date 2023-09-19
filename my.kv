@@ -1,0 +1,103 @@
+#:import MapSource kivy_garden.mapview.MapSource
+#:import utils kivy.utils
+
+WindowManager:
+    WelcomeScreen:
+    CreateScreen:
+    ChooseScreen:
+    RunScreen:
+    TrackingScreen:
+
+<Toolbar@BoxLayout>:
+    size_hint_y: None
+    height: '48dp'
+    padding: '4dp'
+    spacing: '4dp'
+
+    canvas:
+        Color:
+            rgba: .2, .2, .2, .6
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<ShadedLabel@Label>:
+    size: self.texture_size
+    canvas.before:
+        Color:
+            rgba: .2, .2, .2, .6
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<WelcomeScreen>:
+    name: "welcomescreen"
+
+    Button:
+        text: "Welcome!"
+        on_release: app.root.current = "choosescreen"
+<ChooseScreen>:
+    name: "choosescreen"
+
+    BoxLayout:
+        Button:
+            text: "Load a Track"
+            on_release: app.root.current = "runscreen"
+        Button:
+            text: "Create Track"
+            on_release: app.root.current = "createscreen"
+<CreateScreen>:
+    name: "createscreen"
+
+    BoxLayout:
+        Label:
+            text: "Work In Progress"
+        Button:
+            text: "Zpět"
+            on_release: app.root.current = "choosescreen"
+
+<RunScreen>:
+    name: "runscreen"
+
+    RelativeLayout:
+
+        MapView:
+            id: mapview
+            lat: 49.5
+            lon: 14.8
+            zoom: 6
+            #size_hint: .5, .5
+            #pos_hint: {"x": .25, "y": .25}
+
+            #on_map_relocated: mapview2.sync_to(self)
+            #on_map_relocated: mapview3.sync_to(self)
+
+            MapMarker:
+                lat: 50.6394
+                lon: 3.057
+
+            MapMarker
+                lat: -33.867
+                lon: 151.206
+
+        Toolbar:
+            top: root.top
+            Button:
+                text: "Praha, Česká republika"
+                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(50.06, 14.4)
+            Button:
+                text: "Vesnice, Morava"
+                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(49.18, 16.6)
+            Spinner:
+                text: "Výběr Map"
+                values: MapSource.providers.keys()
+                on_text: mapview.map_source = self.text
+            Button:
+                text: "Zpět na výběr"
+                on_release: app.root.current = "choosescreen"
+
+        Toolbar:
+            Label:
+                text: "Longitude: {}".format(mapview.lon)
+            Label:
+                text: "Latitude: {}".format(mapview.lat)
