@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = GPS test App
+title = Oreon Runs
 
 # (str) Package name
-package.name = GPSApp
+package.name = Oreon
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.test
@@ -46,7 +46,7 @@ requirements = python3==3.7.6,hostpython3==3.7.6,kivy,pillow,Plyer,kivy_garden.m
 #presplash.filename = %(source.dir)s/data/presplash.png
 
 # (str) Icon of the application
-#icon.filename = %(source.dir)s/data/icon.png
+icon.filename = %(source.dir)s/data/icon.png
 
 # (list) Supported orientations
 # Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
@@ -94,7 +94,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18), android.permisssion.ACCESS_FINE_LOCATION, android.permisssion.ACCESS_COARSE_LOCATION 
+android.permissions = android.permission.INTERNET, android.permisssion.ACCESS_FINE_LOCATION, android.permisssion.ACCESS_COARSE_LOCATION, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
