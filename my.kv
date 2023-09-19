@@ -32,20 +32,50 @@ WindowManager:
 
 <WelcomeScreen>:
     name: "welcomescreen"
-
-    Button:
-        text: "Welcome!"
-        on_release: app.root.current = "choosescreen"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'Data/Orient_Welcome.jpg'
+    FloatLayout:
+        Label:
+            text: "Vítej!"
+            size_hint: .5, .5
+            pos_hint: {"x": .25, "y": .25}
+            font_size: '100sp'
+            markup: True
+        Button:
+            text: "Začít"
+            on_release: app.root.current = "choosescreen"
+            size_hint: .5, .2
+            pos_hint: {"x": .25, "y": .15}
+            background_normal: 'Data/normal.png'
+            background_down: 'Data/down.png'
+            border: 30,30,30,30
 <ChooseScreen>:
     name: "choosescreen"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'Data/Orient_Choose.jpg'
 
     BoxLayout:
         Button:
             text: "Load a Track"
             on_release: app.root.current = "runscreen"
+            background_color: 0, 0, 0, .3
+            markup: True
+            font_size: '50sp'
+            color: 1,1,1,1
+
         Button:
             text: "Create Track"
             on_release: app.root.current = "createscreen"
+            background_color: 0, 0, 0, .3
+            markup: True
+            font_size: '50sp'
+            color: 1,1,1,1
 <CreateScreen>:
     name: "createscreen"
 
