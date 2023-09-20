@@ -1,6 +1,6 @@
 #:import MapSource kivy_garden.mapview.MapSource
 #:import utils kivy.utils
-
+#:import GPS GPS
 WindowManager:
     WelcomeScreen:
     CreateScreen:
@@ -35,7 +35,7 @@ WindowManager:
     canvas.before:
         Rectangle:
             pos: self.pos
-            size: self.size
+            size: 1920, 1080
             source: 'data/Orient_Welcome.jpg'
     FloatLayout:
         Label:
@@ -57,7 +57,7 @@ WindowManager:
     canvas.before:
         Rectangle:
             pos: self.pos
-            size: self.size
+            size: 1920, 1080
             source: 'data/Orient_Choose.jpg'
 
     BoxLayout:
@@ -68,6 +68,11 @@ WindowManager:
             markup: True
             font_size: '50sp'
             color: 1,1,1,1
+            multiline: True
+            text_size: self.width, None
+            height: self.texture_size[1]
+            halign: 'center'
+
 
         Button:
             text: "Create Track"
@@ -76,6 +81,11 @@ WindowManager:
             markup: True
             font_size: '50sp'
             color: 1,1,1,1
+            multiline: True
+            text_size: self.width, None
+            height: self.texture_size[1]
+            halign: 'center'
+
 <CreateScreen>:
     name: "createscreen"
 
@@ -113,21 +123,38 @@ WindowManager:
         Toolbar:
             top: root.top
             Button:
-                text: "Praha, Česká republika"
-                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(50.06, 14.4)
+                text: "Vaše lokace"
+                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(GPS.gps.location)
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
             Button:
-                text: "Vesnice, Morava"
-                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(49.18, 16.6)
+                text: "Start"
+                on_release: mapview.set_zoom_at(10,1,1), mapview.center_on(app.run.start)
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
             Spinner:
                 text: "Výběr Map"
                 values: MapSource.providers.keys()
                 on_text: mapview.map_source = self.text
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
             Button:
                 text: "Zpět na výběr"
                 on_release: app.root.current = "choosescreen"
-
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
         Toolbar:
             Label:
                 text: "Longitude: {}".format(mapview.lon)
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
             Label:
                 text: "Latitude: {}".format(mapview.lat)
+                height: self.texture_size[1]
+                text_size: self.width, None
+                halign: 'center'
