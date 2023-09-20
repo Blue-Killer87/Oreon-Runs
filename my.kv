@@ -36,7 +36,7 @@ WindowManager:
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'Data/Orient_Welcome.jpg'
+            source: 'data/Orient_Welcome.jpg'
     FloatLayout:
         Label:
             text: "Vítej!"
@@ -49,8 +49,8 @@ WindowManager:
             on_release: app.root.current = "choosescreen"
             size_hint: .5, .2
             pos_hint: {"x": .25, "y": .15}
-            background_normal: 'Data/normal.png'
-            background_down: 'Data/down.png'
+            background_normal: 'data/normal.png'
+            background_down: 'data/down.png'
             border: 30,30,30,30
 <ChooseScreen>:
     name: "choosescreen"
@@ -58,7 +58,7 @@ WindowManager:
         Rectangle:
             pos: self.pos
             size: self.size
-            source: 'Data/Orient_Choose.jpg'
+            source: 'data/Orient_Choose.jpg'
 
     BoxLayout:
         Button:
