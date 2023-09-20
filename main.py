@@ -42,6 +42,11 @@ class MyApp(App):
     def build(self):
         pass
 
+class GPS(App):
+    def gps(self, *args, **kwargs):
+        location = [10, 10]
+        return location
+
 
 class GpsTest(App):
 
