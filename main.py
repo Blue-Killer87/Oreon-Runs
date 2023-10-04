@@ -48,7 +48,7 @@ class GPS(App):
         return location
 
 
-class GpsTest(App):
+'''class GpsTest(App):
 
     gps_location = StringProperty()
     gps_status = StringProperty('Click Start to get GPS location updates')
@@ -69,7 +69,7 @@ class GpsTest(App):
         # # To request permissions without a callback, do:
         # request_permissions([Permission.ACCESS_COARSE_LOCATION,
         #                      Permission.ACCESS_FINE_LOCATION])
-
+'''
 
 if __name__ == '__main__':
     MyApp().run()
