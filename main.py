@@ -42,34 +42,5 @@ class MyApp(App):
     def build(self):
         pass
 
-class GPS(App):
-    def gps(self, *args, **kwargs):
-        location = [10, 10]
-        return location
-
-
-'''class GpsTest(App):
-
-    gps_location = StringProperty()
-    gps_status = StringProperty('Click Start to get GPS location updates')
-
-    def request_android_permissions(self):
-
-        from android.permissions import request_permissions, Permission
-
-        def callback(permissions, results):
-
-            if all([res for res in results]):
-                print("callback. All permissions granted.")
-            else:
-                print("callback. Some permissions refused.")
-
-        request_permissions([Permission.ACCESS_COARSE_LOCATION,
-                             Permission.ACCESS_FINE_LOCATION], callback)
-        # # To request permissions without a callback, do:
-        # request_permissions([Permission.ACCESS_COARSE_LOCATION,
-        #                      Permission.ACCESS_FINE_LOCATION])
-'''
-
 if __name__ == '__main__':
     MyApp().run()
