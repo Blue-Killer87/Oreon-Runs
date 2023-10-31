@@ -1,5 +1,7 @@
 #:import MapSource kivy_garden.mapview.MapSource
 #:import utils kivy.utils
+#:import GPS main
+
 WindowManager:
     WelcomeScreen:
     CreateScreen:
@@ -61,7 +63,7 @@ WindowManager:
 
     BoxLayout:
         Button:
-            text: "Load a Track"
+            text: "Načti trasu"
             on_release: app.root.current = "runscreen"
             background_color: 0, 0, 0, .3
             markup: True
@@ -74,7 +76,7 @@ WindowManager:
 
 
         Button:
-            text: "Create Track"
+            text: "Vytvoř trasu"
             on_release: app.root.current = "createscreen"
             background_color: 0, 0, 0, .3
             markup: True
@@ -87,7 +89,11 @@ WindowManager:
 
 <CreateScreen>:
     name: "createscreen"
-
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: 1920, 1080
+            source: 'data/Orient_Welcome.jpg'
     BoxLayout:
         Label:
             text: "Work In Progress"
