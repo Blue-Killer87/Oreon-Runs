@@ -37,16 +37,17 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, Plyer, kivy_garden openssl, requests, charset_normalizer, chardet,idna, urllib3, certifi
+requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet,idna, urllib3, certifi, kivymd, https://github.com/HyTurtle/plyer/archive/master.zip
+
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
 
 # (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = %(source.dir)s/data/LogoLarge.png
 
 # (str) Icon of the application
-icon.filename = %(source.dir)s/data/icon.png
+icon.filename = %(source.dir)s/data/LogoLargeIcon.png
 
 # (list) Supported orientations
 # Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
@@ -94,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
+android.permissions = android.permission.INTERNET, CAMERA, ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION, android.permission.HIGH_SAMPLING_RATE_SENSORS(name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
