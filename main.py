@@ -6,6 +6,8 @@ from kivy.utils import platform
 from plyer import gps
 from kivy.properties import StringProperty
 from kivy_garden.mapview import MapMarker
+from kivy.animation import Animation
+
 
 
 KV = '''
@@ -323,13 +325,7 @@ class Oreon(MDApp):
         else:
             self.lat = kwargs['lat']
             self.lon = kwargs['lon']
-            if not self.previous_coords:
-                self.previous_coords  = (kwargs['lat'], kwargs['lon'])
-            self.distance += self.calculate_distance(self.previous_coords, (kwargs['lat'], kwargs['lon']))
-            self.distance_travelled_label.text = "Distance"  + str(self.distance)
-            self.previous_coords = (kwargs['lat'], kwargs['lon'])
             self.mapview.center_on(kwargs['lat'], kwargs['lon'])
-            self.mapview.remove_marker(self.marker)
             self.marker = MapMarker(lat=kwargs['lat'], lon=kwargs['lon'])
             self.mapview.add_marker(self.marker)
 
@@ -346,6 +342,24 @@ class Oreon(MDApp):
         gps.start(1000, 0)
         pass
 
+    def hook_keyboard(self, window, key, *largs): 
+        
+        # key == 27 means it is waiting for  
+        # back button tobe pressed 
+        if key == 27: 
+                
+            # checking if we are at mainscreen or not 
+            if self.screen_manager.current == 'welcome': 
+                    
+                # return True means do nothing 
+                return True
+            else: 
+                    
+                # return anything except True result in  
+                # closing of the app on button click 
+                # if are not at mainscreen and if we press  
+                # back button the app will get terminated 
+                pass
 
 
 Oreon().run()
