@@ -1,2 +1,3 @@
 # Oreon Runs
-Mobile app for orienteering.
+
+Modern application for orienteering.
