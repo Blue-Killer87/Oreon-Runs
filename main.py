@@ -1,5 +1,6 @@
 from kivy.lang import Builder
-from kivy.uix.screenmanager import Screen
+from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.core import window
 from kivymd.app import MDApp
 from kivy.clock import mainthread
 from kivy.utils import platform
@@ -243,6 +244,10 @@ class CreateQRScreen(Screen):
 class ChooseTrackScreen(Screen):
     pass
 
+class Main(ScreenManager):
+    def __init__(self, **kwargs): 
+        super().__init__(**kwargs)
+        window.bind(on_keyboard = self.keyboard)
 
 class GpsBlinker(MapMarker):
     def blink(self):
@@ -342,25 +347,12 @@ class Oreon(MDApp):
         gps.start(1000, 0)
         pass
 
-    def hook_keyboard(self, window, key, *largs): 
-        
-        # key == 27 means it is waiting for  
-        # back button tobe pressed 
-        if key == 27: 
-                
-            # checking if we are at mainscreen or not 
-            if self.screen_manager.current == 'welcome': 
-                    
-                # return True means do nothing 
-                return True
-            else: 
-                    
-                # return anything except True result in  
-                # closing of the app on button click 
-                # if are not at mainscreen and if we press  
-                # back button the app will get terminated 
-                pass
-
+    def keyboard(self,window,key,*args):
+        if key == 27 and self.sm.current != "welcome":
+            self.current = 'choose'
+            return True   # key event consumed by app
+        else:           
+            return False  # key event passed to Android
 
 Oreon().run()
 # pro Ubuntu nutné nainstalovat:
