@@ -6,7 +6,7 @@ from kivy.clock import mainthread
 from kivy.utils import platform
 from plyer import gps
 from kivy.properties import StringProperty
-from kivy_garden.mapview import MapMarker
+from kivy_garden.mapview import MapMarker, MapView
 from kivy.animation import Animation
 
 
@@ -140,7 +140,7 @@ ScreenManager:
 
         Button:
             text: "Vytvoř trasu"
-            on_press: self.stop
+            on_press: app.root.current = "create"
             background_color: 0, 0, 0, .1
             markup: True
             font_size: sp(50)
@@ -176,6 +176,7 @@ ScreenManager:
 
             #on_map_relocated: mapview2.sync_to(self)
             #on_map_relocated: mapview3.sync_to(self)
+            #on_map_relocated: app.restrict_movement
 
 
         Toolbar:
@@ -218,6 +219,12 @@ ScreenManager:
                 text_size: self.width, None
                 halign: 'center'
 
+<CreateScreen>
+    name: 'create'
+    Label:
+        text: "Work in Progress... maybe"
+        font_size: sp(35)
+        
 '''
 
 class WelcomeScreen(Screen):
@@ -354,6 +361,9 @@ class Oreon(MDApp):
         else:           
             return False  # key event passed to Android
 
+    def restrict_movement(self):
+        if MapView.lon > 179 or MapView.lon < -179:
+            MapView.set_zoom_at(10,1,1)
 Oreon().run()
 # pro Ubuntu nutné nainstalovat:
 # sudo apt-get install gettext
