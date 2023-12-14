@@ -101,7 +101,7 @@ ScreenManager:
                     source: 'data/BackgroundOreon.png'
 
         MDFillRoundFlatIconButton:
-            text: "Začít"
+            text: "Start"
             icon: "walk"
             icon_size: "98sp"
             font_size: sp(30)  
@@ -126,7 +126,7 @@ ScreenManager:
 
     BoxLayout:
         Button:
-            text: "Načti trasu"
+            text: "Load Track"
             on_release: app.root.current = "choosetrack"
             background_color: 0, 0, 0, .1
             markup: True
@@ -139,7 +139,7 @@ ScreenManager:
 
 
         Button:
-            text: "Vytvoř trasu"
+            text: "Create track"
             on_press: app.root.current = "create"
             background_color: 0, 0, 0, .1
             markup: True
@@ -154,7 +154,7 @@ ScreenManager:
     name: "choosetrack"
 
     MDRectangleFlatIconButton:
-        text: "Načíst mapu z knihovny"
+        text: "Load from library"
         on_press: app.root.current = "run"
         on_release: app.start(1000, 0)
         font_size: sp(30)
@@ -182,21 +182,21 @@ ScreenManager:
         Toolbar:
             top: root.top
             Button:
-                text: "Vaše lokace"
+                text: "Your location"
                 on_release: mapview.set_zoom_at(10,1,1)
                 height: self.texture_size[1]
                 text_size: self.width, None
                 halign: 'center'
 
             Spinner:
-                text: "Výběr Map"
+                text: "Chose map"
                 values: MapSource.providers.keys()
                 on_text: mapview.map_source = self.text
                 height: self.texture_size[1]
                 text_size: self.width, None
                 halign: 'center'
             Button:
-                text: "Zpět na výběr"
+                text: "Back to menu"
                 on_press: app.root.current = "choose" 
                 on_release: app.stop()
                 height: self.texture_size[1]
@@ -228,7 +228,7 @@ ScreenManager:
             pos_hint: {"center_x": .5, "center_y": .6}
 
         Button:
-            text: "Vrátit zpátky"
+            text: "Go back"
             on_release: app.root.current="choose"
             font_size: sp(30)  
             size_hint:(.4, .25)
