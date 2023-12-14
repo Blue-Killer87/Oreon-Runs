@@ -221,10 +221,20 @@ ScreenManager:
 
 <CreateScreen>
     name: 'create'
-    Label:
-        text: "Work in Progress... maybe"
-        font_size: sp(35)
-        
+    FloatLayout:
+        Label:
+            text: "Work in Progress... maybe"
+            font_size: sp(35)
+            pos_hint: {"center_x": .5, "center_y": .6}
+
+        Button:
+            text: "Vrátit zpátky"
+            on_release: app.root.current="choose"
+            font_size: sp(30)  
+            size_hint:(.4, .25)
+            pos_hint: {"center_x": .5, "center_y": .1}
+
+                    
 '''
 
 class WelcomeScreen(Screen):
