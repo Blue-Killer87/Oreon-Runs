@@ -6,7 +6,7 @@ Any version below 10.0.1 is officially not supported as a secure and LTS version
 
 | Version | Supported          |
 | ------- | ------------------ |
-| > 5.1.x | :white_check_mark: |
+|> 10.0.1 | :white_check_mark: |
 |  10.0.0 | :x:                |
 | < 9.9.x | :x:                |
 
