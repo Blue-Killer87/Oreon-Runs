@@ -375,6 +375,6 @@ class Oreon(MDApp):
         if MapView.lon > 179 or MapView.lon < -179:
             MapView.set_zoom_at(10,1,1)
 Oreon().run()
-# pro Ubuntu nutné nainstalovat:
+# Required dependencies for Ubuntu:
 # sudo apt-get install gettext
 # sudo apt-get install zbar-tools
