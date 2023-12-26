@@ -355,6 +355,6 @@ class Oreon(MDApp):
             return False  # key event passed to Android
 
 Oreon().run()
-# pro Ubuntu nutné nainstalovat:
+# Required dependencies for Ubuntu:
 # sudo apt-get install gettext
 # sudo apt-get install zbar-tools
