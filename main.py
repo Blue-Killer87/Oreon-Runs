@@ -6,10 +6,10 @@ from kivy.clock import mainthread
 from kivy.utils import platform
 from plyer import gps
 from kivy.properties import StringProperty
-from kivy_garden.mapview import MapMarker
+from kivy_garden.mapview import MapMarker, MapView
 from kivy.animation import Animation
-
-
+from kivymd.uix.menu import MDDropdownMenu
+from kivy_garden.mapview import MapSource
 
 KV = '''
 #:import MapSource kivy_garden.mapview.MapSource
@@ -58,7 +58,7 @@ ScreenManager:
 
     canvas:
         Color:
-            rgba: .2, .2, .2, .6
+            rgba: .1, .1, .1, .5
         Rectangle:
             pos: self.pos
             size: self.size
@@ -101,15 +101,23 @@ ScreenManager:
                     source: 'data/BackgroundOreon.png'
 
         MDFillRoundFlatIconButton:
-            text: "Začít"
-            icon: "walk"
-            icon_size: "98sp"
-            font_size: sp(30)  
+            text: "Load Track"
+            icon: "go-kart-track"
+            icon_size: "64sp"
+            font_size: sp(25)  
             text_color: "white"
-            pos_hint: {"center_x": .5, "center_y": .4}
+            pos_hint: {"center_x": .5, "center_y": .35}
             on_release:
-                app.root.current = "choose"
-                root.manager.transition.direction = "left"
+                app.root.current = "run"
+        MDFillRoundFlatIconButton:
+            text: "Create Track"
+            icon: "draw"
+            icon_size: "64sp"
+            font_size: sp(25)  
+            text_color: "white"
+            pos_hint: {"center_x": .5, "center_y": .2}
+            on_release:
+                app.root.current = "create"
 
 
 
@@ -126,7 +134,7 @@ ScreenManager:
 
     BoxLayout:
         Button:
-            text: "Načti trasu"
+            text: "Load Track"
             on_release: app.root.current = "choosetrack"
             background_color: 0, 0, 0, .1
             markup: True
@@ -139,8 +147,8 @@ ScreenManager:
 
 
         Button:
-            text: "Vytvoř trasu"
-            on_press: self.stop
+            text: "Create track"
+            on_press: app.root.current = "create"
             background_color: 0, 0, 0, .1
             markup: True
             font_size: sp(50)
@@ -154,12 +162,20 @@ ScreenManager:
     name: "choosetrack"
 
     MDRectangleFlatIconButton:
-        text: "Načíst mapu z knihovny"
+        text:"Load from local library"
         on_press: app.root.current = "run"
         on_release: app.start(1000, 0)
         font_size: sp(30)
         icon:"library"
-        pos_hint: {"center_x": .5, "center_y": .5}
+        pos_hint: {"center_x": .5, "center_y": .4}
+
+    MDRectangleFlatIconButton:
+        text:"Load from internet"
+        on_press: app.root.current = "run"
+        on_release: app.start(1000, 0)
+        font_size: sp(30)
+        icon:"library"
+        pos_hint: {"center_x": .5, "center_y": .6}
 
 <RunScreen>
     name: "run"
@@ -176,31 +192,46 @@ ScreenManager:
 
             #on_map_relocated: mapview2.sync_to(self)
             #on_map_relocated: mapview3.sync_to(self)
+            #on_map_relocated: app.restrict_movement
 
 
         Toolbar:
             top: root.top
-            Button:
-                text: "Vaše lokace"
-                on_release: mapview.set_zoom_at(10,1,1)
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
+            FloatLayout:
+                MDRectangleFlatIconButton:
+                    text: "Your location"
+                    on_release: mapview.set_zoom_at(root.location)
+                    halign: 'center'
+                    font_size: sp(20)
+                    icon:"crosshairs-gps"
+                    pos_hint: {"center_x": .15, "center_y": .5}
+                    size_hint: (0.1, 0.1)
+                    multiline: True
 
-            Spinner:
-                text: "Výběr Map"
-                values: MapSource.providers.keys()
-                on_text: mapview.map_source = self.text
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
-            Button:
-                text: "Zpět na výběr"
-                on_press: app.root.current = "choose" 
-                on_release: app.stop()
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
+
+                MDRectangleFlatIconButton:
+                    text: "Back to menu"
+                    on_press: app.root.current = "welcome" 
+                    font_size: sp(20)
+                    icon:"keyboard-backspace"  
+                    halign: 'center'
+                    pos_hint: {"center_x": .5, "center_y": .5}
+                    size_hint: (0.1, 0.1)
+                    multiline: True
+
+
+                MDRectangleFlatIconButton:
+                    text: "Create Mark"
+                    on_press: app.root.current = "welcome" 
+                    font_size: sp(20)
+                    icon:"map-marker-outline"  
+                    halign: 'center'
+                    pos_hint: {"center_x": .85, "center_y": .5}
+                    size_hint: (0.1, 0.1)
+                    multiline: True
+
+
+            
         Toolbar:
             Label:
                 text: "Longitude: {}".format(mapview.lon)
@@ -218,6 +249,22 @@ ScreenManager:
                 text_size: self.width, None
                 halign: 'center'
 
+<CreateScreen>
+    name: 'create'
+    FloatLayout:
+        Label:
+            text: "Work in Progress... maybe"
+            font_size: sp(35)
+            pos_hint: {"center_x": .5, "center_y": .6}
+
+        Button:
+            text: "Go back"
+            on_release: app.root.current="welcome"
+            font_size: sp(30)  
+            size_hint:(.4, .25)
+            pos_hint: {"center_x": .5, "center_y": .1}
+
+                    
 '''
 
 class WelcomeScreen(Screen):
@@ -269,6 +316,7 @@ class GpsBlinker(MapMarker):
             
 class Oreon(MDApp):
 
+
     gps_lan = float()
     gps_lon = float()
     gps_location = StringProperty()
@@ -287,9 +335,7 @@ class Oreon(MDApp):
 
         request_permissions([Permission.ACCESS_COARSE_LOCATION,
                              Permission.ACCESS_FINE_LOCATION], callback)
-        # # To request permissions without a callback, do:
-        # request_permissions([Permission.ACCESS_COARSE_LOCATION,
-        #                      Permission.ACCESS_FINE_LOCATION])
+    
 
     def build(self):
         self.theme_cls.theme_style = "Dark"
@@ -354,6 +400,9 @@ class Oreon(MDApp):
         else:           
             return False  # key event passed to Android
 
+    def restrict_movement(self):
+        if MapView.lon > 179 or MapView.lon < -179:
+            MapView.set_zoom_at(10,1,1)
 Oreon().run()
 # Required dependencies for Ubuntu:
 # sudo apt-get install gettext

@@ -1,0 +1,11 @@
+msgid "Start"
+msgstr "Začít"
+
+msgid "Load Track"
+msgstr "Načíst Trasu"
+
+msgid "Create Track"
+msgstr "Vytvořit Trasu"
+
+msgid "Load from library"
+msgstr "Načíst z knihovny"
