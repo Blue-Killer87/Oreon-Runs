@@ -205,9 +205,9 @@ ScreenManager:
                     font_size: sp(20)
                     icon:"crosshairs-gps"
                     pos_hint: {"center_x": .15, "center_y": .5}
-                    size_hint: (0.2, 0.8)
+                    size_hint: (0.3, 0.8)
                     multiline: True
-                    md_bg_color: 1,.5,0,.5
+                    md_bg_color: 1,.5,0,.6
 
 
                 MDIconButton:
@@ -217,9 +217,9 @@ ScreenManager:
                     icon:"keyboard-backspace"  
                     halign: 'center'
                     pos_hint: {"center_x": .5, "center_y": .5}
-                    size_hint: (0.2, 1)
+                    size_hint: (0.3, 1)
                     multiline: True
-                    md_bg_color: 1,.5,0,.5
+                    md_bg_color: 1,.5,0,.6
 
 
                 MDIconButton:
@@ -229,9 +229,9 @@ ScreenManager:
                     icon:"map-marker-outline"  
                     halign: 'center'
                     pos_hint: {"center_x": .85, "center_y": .5}
-                    size_hint: (0.2, 1)
+                    size_hint: (0.3, 1)
                     multiline: True
-                    md_bg_color: 1,.5,0,.5
+                    md_bg_color: 1,.5,0,.6
             
 
 
@@ -390,6 +390,6 @@ class Oreon(MDApp):
         if MapView.lon > 179 or MapView.lon < -179:
             MapView.set_zoom_at(10,1,1)
 Oreon().run()
-# Required dependencies for Ubuntu:
+# pro Ubuntu nutné nainstalovat:
 # sudo apt-get install gettext
 # sudo apt-get install zbar-tools
