@@ -198,56 +198,42 @@ ScreenManager:
         Toolbar:
             top: root.top
             FloatLayout:
-                MDRectangleFlatIconButton:
-                    text: "Your location"
+                MDIconButton:
+
                     on_release: mapview.set_zoom_at(root.location)
                     halign: 'center'
                     font_size: sp(20)
                     icon:"crosshairs-gps"
                     pos_hint: {"center_x": .15, "center_y": .5}
-                    size_hint: (0.1, 0.1)
+                    size_hint: (0.2, 0.8)
                     multiline: True
+                    md_bg_color: 1,.5,0,.5
 
 
-                MDRectangleFlatIconButton:
-                    text: "Back to menu"
+                MDIconButton:
+
                     on_press: app.root.current = "welcome" 
                     font_size: sp(20)
                     icon:"keyboard-backspace"  
                     halign: 'center'
                     pos_hint: {"center_x": .5, "center_y": .5}
-                    size_hint: (0.1, 0.1)
+                    size_hint: (0.2, 1)
                     multiline: True
+                    md_bg_color: 1,.5,0,.5
 
 
-                MDRectangleFlatIconButton:
-                    text: "Create Mark"
+                MDIconButton:
+
                     on_press: app.root.current = "welcome" 
                     font_size: sp(20)
                     icon:"map-marker-outline"  
                     halign: 'center'
                     pos_hint: {"center_x": .85, "center_y": .5}
-                    size_hint: (0.1, 0.1)
+                    size_hint: (0.2, 1)
                     multiline: True
-
-
+                    md_bg_color: 1,.5,0,.5
             
-        Toolbar:
-            Label:
-                text: "Longitude: {}".format(mapview.lon)
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
-            Label:
-                text: "Latitude: {}".format(mapview.lat)
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
-            Label:
-                text: app.gps_location
-                height: self.texture_size[1]
-                text_size: self.width, None
-                halign: 'center'
+
 
 <CreateScreen>
     name: 'create'
