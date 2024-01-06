@@ -8,10 +8,10 @@ from plyer import gps
 from kivy.properties import StringProperty
 from kivy_garden.mapview import MapMarker, MapView
 from kivy.animation import Animation
-from kivymd.uix.menu import MDDropdownMenu
 from kivy_garden.mapview import MapSource
 
-KV = '''
+
+kv = '''
 #:import MapSource kivy_garden.mapview.MapSource
 #:import utils kivy.utils
 
@@ -25,31 +25,6 @@ ScreenManager:
     CreateQRScreen:
     ChooseTrackScreen:
 
-<GpsBlinker>:
-    default_blink_size: 25
-    blink_size: 25
-    source: 'kivymd/images/transparent.png'
-    outer_opacity: 1
- 
-    canvas.before:
-        # Outer circle
-        Color:
-            rgba: app.theme_cls.primary_color[:3] + [root.outer_opacity]
- 
-        RoundedRectangle:
-            radius: [root.blink_size/2.0, ]
-            size: [root.blink_size, root.blink_size]
-            pos: [root.pos[0] + root.size[0]/2.0 - root.blink_size/2.0, root.pos[1] + root.size[1]/2.0 - root.blink_size/2.0]
- 
-        # Inner Circle
-        Color:
-            rgb: 1,1,1
-        RoundedRectangle:
-            radius: [root.default_blink_size/2.0, ]
-            size: [root.default_blink_size, root.default_blink_size]
-            pos: [root.pos[0] + root.size[0]/2.0 - root.default_blink_size/2.0, root.pos[1] + root.size[1]/2.0 - root.default_blink_size/2.0]
-
-            
 <Toolbar@BoxLayout>:
     size_hint_y: None
     height: '48dp'
@@ -120,7 +95,6 @@ ScreenManager:
                 app.root.current = "create"
 
 
-
 <ChooseScreen>
     name: "choose"
 
@@ -187,6 +161,7 @@ ScreenManager:
             lat: 49.5
             lon: 14.8
             zoom: 6
+            map_source: "osm"
             #size_hint: .5, .5
             #pos_hint: {"x": .25, "y": .25}
 
@@ -200,7 +175,7 @@ ScreenManager:
             FloatLayout:
                 MDIconButton:
 
-                    on_release: mapview.set_zoom_at(root.location)
+                    on_release: mapview.center_on(GPSlang, GPSlong)
                     halign: 'center'
                     font_size: sp(20)
                     icon:"crosshairs-gps"
@@ -224,7 +199,7 @@ ScreenManager:
 
                 MDIconButton:
 
-                    on_press: app.root.current = "welcome" 
+                    on_press: app.center_on_gps()
                     font_size: sp(20)
                     icon:"map-marker-outline"  
                     halign: 'center'
@@ -238,19 +213,56 @@ ScreenManager:
 <CreateScreen>
     name: 'create'
     FloatLayout:
-        Label:
-            text: "Work in Progress... maybe"
-            font_size: sp(35)
-            pos_hint: {"center_x": .5, "center_y": .6}
+        MDTextField:
+            id: text_create_name
+            hint_text: "Track name"
+            helper_text: "Insert a name that describes your new track"
+            helper_text_mode: "on_focus"
+            mode: "round"
+            required: True
+            pos_hint: {"center_x": .5, "center_y": .9}
+            size_hint: (.5, .07)
 
-        Button:
-            text: "Go back"
+        MDTextField:
+            hint_text: ""
+            helper_text: ""
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .75}
+            size_hint: (.5, .07)
+
+        MDTextField:
+            hint_text: ""
+            helper_text: ""
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .6}
+            size_hint: (.5, .07)
+
+        MDTextField:
+            hint_text: ""
+            helper_text: ""
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .45}
+            size_hint: (.5, .07)
+        
+        MDFillRoundFlatIconButton:
+            text: "Submit"
+            icon: "keyboard-return" 
             on_release: app.root.current="welcome"
             font_size: sp(30)  
-            size_hint:(.4, .25)
+            size_hint:(.3, .1)
+            pos_hint: {"center_x": .5, "center_y": .21}
+
+        MDFillRoundFlatIconButton:
+            text: "Go back"
+            icon: "keyboard-backspace" 
+            on_release: app.root.current="welcome"
+            font_size: sp(30)  
+            size_hint:(.3, .1)
             pos_hint: {"center_x": .5, "center_y": .1}
 
-                    
 '''
 
 class WelcomeScreen(Screen):
@@ -278,36 +290,49 @@ class ChooseTrackScreen(Screen):
     pass
 
 class Main(ScreenManager):
-    def __init__(self, **kwargs): 
-        super().__init__(**kwargs)
-        window.bind(on_keyboard = self.keyboard)
+    GPSlan = StringProperty('0')
+    GPSlon = StringProperty('0')
 
-class GpsBlinker(MapMarker):
-    def blink(self):
-        # Animation that changes the blink size and opacity
-        anim = Animation(outer_opacity=0, blink_size=50)
-         
-        # When the animation completes, reset the animation, then repeat
-        anim.bind(on_complete = self.reset)
-        anim.start(self)
- 
-    def reset(self, *args):
-        self.outer_opacity = 1
-        self.blink_size = self.default_blink_size
-        self.blink()
- 
-    # blink --> outer_opacity = 0, blink_size = 50
-    # reset --> outer_opacity = 1, blink_size = default = 25
+class GpsTest(MDApp):
+    current_lat = 50  # Default value
+    current_lon = 14  # Default value
 
-            
-class Oreon(MDApp):
+    # Pokud je platforma Android, zapni GPS a nastav jí na metodu on_gps_location
+    if platform == "android":
+        def on_start(self):
+            gps.configure(on_location=self.on_location)
+            gps.start()
+            print("gps.py: Android detected. Requesting permissions")
+            self.request_android_permissions()
 
 
-    gps_lan = float()
-    gps_lon = float()
-    gps_location = StringProperty()
-    gps_status = StringProperty('Click Start to get GPS location updates')
+        #Hlavní metoda GPS. Provede se vždy když přijde nová GPS zpráva. 
+        def on_location(self, **kwargs):
+            sm = ScreenManager()
+            print(kwargs)
+            label_widget = self.root.ids.gps
+            label_widget.text = f'Latitude: {kwargs["lat"]}, Longitude: {kwargs["lon"]}'
+            sm.GPSlan = kwargs["lat"]
+            sm.GPSlon = kwargs["lon"]
 
+            self.center_on_gps(self.current_lat, self.current_lon)
+
+    #Pokud není platforma Android, nezapínej GPS        
+    else:
+        print("Desktop version starting.")
+
+
+
+    #Metoda Build načte kv string
+    def build(self):
+        self.theme_cls.theme_style = "Dark" #Pozadí
+        self.theme_cls.primary_palette = "Orange" #Hlavní barva
+        sm = Main()    
+        return Builder.load_string(kv) #Načtení kv stringu
+
+
+
+    #Žádání o oprávnění
     def request_android_permissions(self):
 
         from android.permissions import request_permissions, Permission
@@ -323,73 +348,8 @@ class Oreon(MDApp):
                              Permission.ACCESS_FINE_LOCATION], callback)
     
 
-    def build(self):
-        self.theme_cls.theme_style = "Dark"
-        self.theme_cls.primary_palette = "Orange"
-        
-        try:
-            gps.configure(on_location=self.on_location,
-                          on_status=self.on_status)
-        except NotImplementedError:
-            import traceback
-            traceback.print_exc()
-            self.gps_status = 'GPS is not implemented for your platform'
+    def center_on_gps(self):
+        mapview = self.root.get_screen('run').ids.mapview  # Accessing the MapView widget
+        mapview.center_on(self.current_lat, self.current_lon)  # Specify the desired latitude and longitude
 
-        if platform == "android":
-            print("gps.py: Android detected. Requesting permissions")
-            self.request_android_permissions()
-
-        return Builder.load_string(KV)
-
-    def start(self, minTime, minDistance):
-        gps.start(minTime, minDistance)
-
-    def stop(self):
-        gps.stop()
-
-    @mainthread
-
-    def onLocationChanged(self, location):
-        self.root.on_location(
-            lat=location.getLatitude(),
-            lon=location.getLongitude())
-        
-    def on_location(self, **kwargs):
-        self.gps_location = f'Latitude: {kwargs["lat"]}, Longitude: {kwargs["lon"]}'
-
-        if (kwargs['accuracy'] < 40 or kwargs['accuracy'] > 100):
-            return
-        else:
-            self.lat = kwargs['lat']
-            self.lon = kwargs['lon']
-            self.mapview.center_on(kwargs['lat'], kwargs['lon'])
-            self.marker = MapMarker(lat=kwargs['lat'], lon=kwargs['lon'])
-            self.mapview.add_marker(self.marker)
-
-
-    @mainthread
-    def on_status(self, stype, status):
-        self.gps_status = 'type={}\n{}'.format(stype, status)
-
-    def on_pause(self):
-        gps.stop()
-        return True
-
-    def on_resume(self):
-        gps.start(1000, 0)
-        pass
-
-    def keyboard(self,window,key,*args):
-        if key == 27 and self.sm.current != "welcome":
-            self.current = 'choose'
-            return True   # key event consumed by app
-        else:           
-            return False  # key event passed to Android
-
-    def restrict_movement(self):
-        if MapView.lon > 179 or MapView.lon < -179:
-            MapView.set_zoom_at(10,1,1)
-Oreon().run()
-# pro Ubuntu nutné nainstalovat:
-# sudo apt-get install gettext
-# sudo apt-get install zbar-tools
+GpsTest().run()
