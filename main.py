@@ -293,11 +293,11 @@ class Main(ScreenManager):
     GPSlan = StringProperty('0')
     GPSlon = StringProperty('0')
 
-class GpsTest(MDApp):
+class Oreon(MDApp):
     current_lat = 50  # Default value
     current_lon = 14  # Default value
 
-    # Pokud je platforma Android, zapni GPS a nastav jí na metodu on_gps_location
+    # If platform is android, turn GPS on and set it to method on_location
     if platform == "android":
         def on_start(self):
             gps.configure(on_location=self.on_location)
@@ -306,7 +306,7 @@ class GpsTest(MDApp):
             self.request_android_permissions()
 
 
-        #Hlavní metoda GPS. Provede se vždy když přijde nová GPS zpráva. 
+        #Main GPS method, calls itself every time the app gets new GPS telemtry
         def on_location(self, **kwargs):
             sm = ScreenManager()
             print(kwargs)
@@ -317,22 +317,22 @@ class GpsTest(MDApp):
 
             self.center_on_gps(self.current_lat, self.current_lon)
 
-    #Pokud není platforma Android, nezapínej GPS        
+    #If platform is not Android, don't turn GPS on      
     else:
         print("Desktop version starting.")
 
 
 
-    #Metoda Build načte kv string
+    #Method Build loads the KV string
     def build(self):
-        self.theme_cls.theme_style = "Dark" #Pozadí
-        self.theme_cls.primary_palette = "Orange" #Hlavní barva
+        self.theme_cls.theme_style = "Dark" #Background
+        self.theme_cls.primary_palette = "Orange" #Main color
         sm = Main()    
-        return Builder.load_string(kv) #Načtení kv stringu
+        return Builder.load_string(kv) #Loading the kv string
 
 
 
-    #Žádání o oprávnění
+    #Permissions reguests
     def request_android_permissions(self):
 
         from android.permissions import request_permissions, Permission
@@ -352,4 +352,4 @@ class GpsTest(MDApp):
         mapview = self.root.get_screen('run').ids.mapview  # Accessing the MapView widget
         mapview.center_on(self.current_lat, self.current_lon)  # Specify the desired latitude and longitude
 
-GpsTest().run()
+Oreon().run()
