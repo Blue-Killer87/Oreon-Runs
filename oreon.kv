@@ -1,0 +1,271 @@
+#:import MapSource kivy_garden.mapview.MapSource
+#:import utils kivy.utils
+
+ScreenManager:
+    WelcomeScreen:
+    ChooseScreen:
+    RunScreen:
+    TrackingScreen:
+    CreateScreen:
+    ScanQRScreen:
+    CreateQRScreen:
+    ChooseTrackScreen:
+
+<Toolbar@BoxLayout>:
+    size_hint_y: None
+    height: '48dp'
+    padding: '4dp'
+    spacing: '4dp'
+
+    canvas:
+        Color:
+            rgba: .1, .1, .1, .5
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<ShadedLabel@Label>:
+    size: self.texture_size
+    canvas.before:
+        Color:
+            rgba: .2, .2, .2, .6
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<WelcomeScreen>
+    name: "welcome"
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 0.1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+
+    FloatLayout:
+
+           
+        MDLabel:
+            font_size: sp(60)
+            text: "Oreon"
+            halign: 'center'
+            pos_hint: {'center_y': .7}
+            bold: True
+            canvas:
+                
+                Color:
+                    rgba: 0.11, 0.11, 0.11, 0.2
+                Rectangle:
+                    pos: self.center_x - 250, self.center_y - 300
+                    size: sp(512),sp(512)
+                    source: 'data/BackgroundOreon.png'
+
+        MDFillRoundFlatIconButton:
+            text: "Load Track"
+            icon: "go-kart-track"
+            icon_size: "64sp"
+            font_size: sp(25)  
+            text_color: "white"
+            pos_hint: {"center_x": .5, "center_y": .35}
+            on_release:
+                app.root.current = "choosetrack"
+            md_bg_color: .1,.2,1,1
+        MDFillRoundFlatIconButton:
+            text: "Create Track"
+            icon: "draw"
+            icon_size: "64sp"
+            font_size: sp(25)  
+            text_color: "white"
+            pos_hint: {"center_x": .5, "center_y": .2}
+            on_release:
+                app.root.current = "create"
+            md_bg_color: .1,.2,1,1
+
+
+
+<ChooseTrackScreen>
+    name: "choosetrack"
+
+    MDRectangleFlatIconButton:
+        text:"Load from local library"
+        on_press: app.root.current = "run"
+        font_size: sp(30)
+        icon:"library"
+        size_hint: .6, .3
+        pos_hint: {"center_x": .5, "center_y": .3}
+        md_color: .1,.2,1,1
+
+
+    MDRectangleFlatIconButton:
+        text:"Load from QR code"
+        on_press: app.root.current = "scan"
+        font_size: sp(30)
+        icon:"qrcode-scan"
+        size_hint: .6, .3
+        pos_hint: {"center_x": .5, "center_y": .7}
+        md_color: .1,.2,1,1
+
+    MDIconButton:
+        icon: "keyboard-backspace"
+        on_release: app.root.current="welcome"
+        pos_hint: {"center_x": .04, "center_y": .95}
+        md_bg_color: .1,.2,1,1
+
+
+
+<ScanQRScreen>
+    name: 'scan'
+
+    MDLabel:
+        font_size: sp(40)
+        text: "Scan your damn QR code already..."
+        color:.1,.2,1,1
+
+        halign: "center"
+
+    MDFillRoundFlatIconButton:
+        text: "Go back"
+        icon: "keyboard-backspace" 
+        on_release: app.root.current="choosetrack"
+        font_size: sp(30)  
+        size_hint:(.3, .1)
+        pos_hint: {"center_x": .5, "center_y": .1}
+        md_bg_color: .1,.2,1,1
+
+
+<RunScreen>
+    name: "run"
+
+    RelativeLayout:
+
+        MapView:
+            id: mapview
+            lat: 49.5
+            lon: 14.8
+            zoom: 6
+            map_source: "osm"
+            #size_hint: .5, .5
+            #pos_hint: {"x": .25, "y": .25}
+
+            #on_map_relocated: mapview2.sync_to(self)
+            #on_map_relocated: mapview3.sync_to(self)
+            #on_map_relocated: app.restrict_movement
+
+
+        Toolbar:
+            top: root.top
+            FloatLayout:
+                MDIconButton:
+                    id: center_button
+                    on_release: app.center_on_gps()
+                    halign: 'center'
+                    font_size: sp(20)
+                    icon:"crosshairs-gps"
+                    pos_hint: {"center_x": .15, "center_y": .5}
+                    size_hint: (0.3, 0.8)
+                    multiline: True
+                    md_bg_color: .1,.2,1,1
+
+
+
+                MDIconButton:
+
+                    on_press: app.root.current = "welcome" 
+                    font_size: sp(20)
+                    icon:"keyboard-backspace"  
+                    halign: 'center'
+                    pos_hint: {"center_x": .5, "center_y": .5}
+                    size_hint: (0.3, 1)
+                    multiline: True
+                    md_bg_color: .1,.2,1,1
+
+
+
+                MDIconButton:
+
+                    on_press: app.center_on_gps()
+                    font_size: sp(20)
+                    icon:"map-marker-outline"  
+                    halign: 'center'
+                    pos_hint: {"center_x": .85, "center_y": .5}
+                    size_hint: (0.3, 1)
+                    multiline: True
+                    md_bg_color: .1,.2,1,1
+
+            
+
+
+<CreateScreen>
+    name: 'create'
+    FloatLayout:
+        MDLabel:
+            text: "Create new track"
+            color: "orange"
+            halign: "center"
+            pos_hint: {"center_x": .5, "center_y": .9}
+            font_size: sp(40)
+        
+        MDTextField:
+            hint_text: "Track name"
+            helper_text: "Insert your new track name here"
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .75}
+            size_hint: (.7, .07)
+            md_bg_color: .1,.2,1,1
+
+        MDTextField:
+            hint_text: "Description"
+            helper_text: "Add your description for the track"
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .63}
+            size_hint: (.7, .07)
+            md_bg_color: .1,.2,1,1
+      
+        MDTextField:
+            hint_text: "Checkpoints"
+            helper_text: "Specify number of checkpoints, set higher if not sure."
+            helper_text_mode: "on_focus"
+            mode: "round"
+            pos_hint: {"center_x": .5, "center_y": .51}
+            size_hint: (.7, .07)
+            md_bg_color: .1,.2,1,1
+        
+        MDFillRoundFlatIconButton:
+            text: "Submit"
+            icon: "keyboard-return" 
+            on_release: app.root.current="tracking"
+            font_size: sp(30)  
+            size_hint:(.3, .1)
+            pos_hint: {"center_x": .5, "center_y": .39}
+            md_bg_color: .1,.2,1,1
+
+        MDFillRoundFlatIconButton:
+            text: "Go back"
+            icon: "keyboard-backspace" 
+            on_release: app.root.current="welcome"
+            font_size: sp(30)  
+            size_hint:(.3, .1)
+            pos_hint: {"center_x": .5, "center_y": .1}
+            md_bg_color: .1,.2,1,1
+
+<TrackingScreen>
+    name: 'tracking'
+    MapView:
+        id: mapview
+        lat: 49.5
+        lon: 14.8
+        zoom: 6
+        map_source: "osm"
+
+    MDIconButton:
+        icon: "keyboard-backspace"
+        on_release: app.root.current="welcome"
+        pos_hint: {"center_x": .04, "center_y": .95}
+        md_bg_color: .1,.2,1,1
+
+
+
+        
