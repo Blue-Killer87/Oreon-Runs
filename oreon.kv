@@ -161,7 +161,7 @@ ScreenManager:
                     on_release: app.center_on_gps()
                     halign: 'center'
                     font_size: sp(20)
-                    icon:"crosshairs-gps"
+                    icon:"play-circle-outline"
                     pos_hint: {"center_x": .15, "center_y": .5}
                     size_hint: (0.3, 0.8)
                     multiline: True
@@ -173,7 +173,7 @@ ScreenManager:
 
                     on_press: app.root.current = "welcome" 
                     font_size: sp(20)
-                    icon:"keyboard-backspace"  
+                    icon:"qrcode-scan"  
                     halign: 'center'
                     pos_hint: {"center_x": .5, "center_y": .5}
                     size_hint: (0.3, 1)
@@ -184,9 +184,9 @@ ScreenManager:
 
                 MDIconButton:
 
-                    on_press: app.center_on_gps()
+                    on_press: app.show_alert_dialog()
                     font_size: sp(20)
-                    icon:"map-marker-outline"  
+                    icon:"stop-circle-outline"  
                     halign: 'center'
                     pos_hint: {"center_x": .85, "center_y": .5}
                     size_hint: (0.3, 1)
