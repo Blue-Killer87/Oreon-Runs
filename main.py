@@ -182,13 +182,3 @@ class OreonApp(MDApp):
 
 OreonApp().run()
 
-
-'''
-Otázky:
-
-Musí být sledování polohy? Je to správné?
-- Poloha skrytá, jen pro systémové využití. Trackování zobrazit až po ukončení.
-
-QR tisk na místě? Místo toho proximity checker?
-- Vytvořit předem QR kódy s číslem stanoviště. Přiřadit zahashované číslo k stanovišti na mapě. Proximity checkem zkontrolovat že tam vážně jsi.
-'''
