@@ -6,22 +6,20 @@ from kivy.clock import mainthread
 from kivy.utils import platform
 from plyer import gps
 from kivy.properties import StringProperty
-from kivy_garden.mapview import MapMarker, MapView, MapMarkerPopup, MapLayer
+from kivy_garden.mapview import MapMarker, MapView, MapMarkerPopup
 from kivy.animation import Animation
 from kivy_garden.mapview import MapSource
 from kivy.core.window import Window
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
-from kivy.graphics.context_instructions import Translate, Scale
-from kivy.graphics import Color, Line, SmoothLine, MatrixInstruction
+from kivy.graphics import Line
+from kivy.clock import Clock
 
 
-if platform != "android" or platform != "ios":
-    Window.size = (900, 800)
-    Window.minimum_width, Window.minimum_height = Window.size
+#if platform != "android" or platform != "ios":
+ #   Window.size = (900, 800)
+  #  Window.minimum_width, Window.minimum_height = Window.size
 
-else: 
-    pass
 
 
 class WelcomeScreen(Screen):
@@ -53,37 +51,53 @@ class Main(ScreenManager):
 
 
 class OreonApp(MDApp):
+
+
     dialog = None
     
     
+    def build(self):
+        self.theme_cls.theme_style = "Dark" #Background
+        self.theme_cls.primary_palette = "Blue" #Main color
+        self.mapviewRun = self.root.get_screen('run').ids.mapview
+
+        prague = (50.0755, 14.4378)
+        initial_position = (50.0755, 14.4378)
+
+        self.lines=[]
+
+        with self.mapviewRun.canvas:
+            line = Line(points=(prague[0], prague[1], initial_position[0], initial_position[1]), width=2)
+            self.lines.append(line)
+
+        # Schedule movement updates every 5 seconds
+        Clock.schedule_interval(self.update_movement, 5)
 
     # If platform is android, turn GPS on and set it to method on_location
     if platform == "android":
         def on_start(self):
-            pins = []
             gps.configure(on_location=self.on_location)
-            gps.start(minTime=2000, minDistance=0)
+            gps.start(minTime=1000, minDistance=0)
             print("gps.py: Android detected. Requesting permissions")
             self.request_android_permissions()
 
 
         @mainthread
         #Main GPS method, calls itself every time the app gets new GPS telemtry
-        def on_location(self, pins, **kwargs):
-            mapview = self.root.get_screen('run').ids.mapview
-            if (kwargs['accuracy'] < 40 or kwargs['accuracy'] > 100):
+        def on_location(self, **kwargs):
+            if (kwargs['accuracy'] < 60 or kwargs['accuracy'] > 100):
                 return
             else:
                 print(kwargs)
-                gpslat = kwargs["lat"]
-                gpslon = kwargs["lon"]
-                self.point = MapMarker(lat = gpslat, lon = gpslon)
-                pins.append(gpslat, gpslon)
+                self.gpslat = kwargs["lat"]
+                self.gpslon = kwargs["lon"]
+                self.point = MapMarker(lat = self.gpslat, lon = self.gpslon)
                 #mapview.remove_marker(self.point)
-                mapview.add_marker(self.point)
+                self.mapviewRun.add_marker(self.point)
+                
+        
 
-        def startRun(self, pins):
-            pass
+        
 
         
 
@@ -101,16 +115,26 @@ class OreonApp(MDApp):
 
         def center_on_gps(self):
             print("Not implemented in desktop version")
-            mapview = self.root.get_screen('run').ids.mapview
             lat=50
             lon=14
             testpoint = MapMarker(lat=lat,lon=lon,source="data/down.png")
-            mapview.add_marker(testpoint)
-        
-    def build(self):
-        self.theme_cls.theme_style = "Dark" #Background
-        self.theme_cls.primary_palette = "Blue" #Main color
+            self.mapviewRun.add_marker(testpoint)
+        def startRun(self):
 
+            with self.mapviewRun.canvas:
+               Line(points=[50, 14, 55, 18], width=2)
+        
+        
+
+    def update_movement(self, dt):
+        # New position for the updated line
+        prague = (50.0755, 14.4378)
+        new_position = (50.0765, 14.4388)
+
+        # Draw a new line connecting the previous position to the updated position
+        with self.mapviewRun.canvas:
+            line = Line(points=(prague[0], prague[1], new_position[0], new_position[1]), width=2)
+            self.lines.append(line)
 
 
     def request_android_permissions(self):
@@ -127,7 +151,7 @@ class OreonApp(MDApp):
         request_permissions([Permission.ACCESS_COARSE_LOCATION,
                             Permission.ACCESS_FINE_LOCATION], callback)
     
-    
+    @mainthread
     def show_alert_dialog(self):
         if not self.dialog:
             self.dialog = MDDialog(
@@ -157,3 +181,14 @@ class OreonApp(MDApp):
         self.dialog.dismiss()
 
 OreonApp().run()
+
+
+'''
+Otázky:
+
+Musí být sledování polohy? Je to správné?
+- Poloha skrytá, jen pro systémové využití. Trackování zobrazit až po ukončení.
+
+QR tisk na místě? Místo toho proximity checker?
+- Vytvořit předem QR kódy s číslem stanoviště. Přiřadit zahashované číslo k stanovišti na mapě. Proximity checkem zkontrolovat že tam vážně jsi.
+'''
