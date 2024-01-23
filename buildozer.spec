@@ -29,7 +29,7 @@ source.include_exts = py,png,jpg,kv,atlas
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 2.1
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet,idna, urllib3, certifi, kivymd, https://github.com/HyTurtle/plyer/archive/master.zip
+requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet,idna, urllib3, libzbar, pyzbar==0.1.8, Camera, zbarcam, zbarlight, qrcode, sdl2_ttf, certifi, KivyMD, https://github.com/HyTurtle/plyer/archive/master.zip
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -47,7 +47,7 @@ requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, kivy_garden.map
 presplash.filename = %(source.dir)s/data/LogoLarge.png
 
 # (str) Icon of the application
-icon.filename = %(source.dir)s/data/LogoLargeIcon.png
+icon.filename = %(source.dir)s/data/Logo.png
 
 # (list) Supported orientations
 # Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
