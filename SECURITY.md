@@ -6,9 +6,9 @@ Any version bellow 10.0.1 is officially **not** supported as a secure and LTS ve
 
 | Version | Supported          |
 | ------- | ------------------ |
-|> 10.0.1 | :white_check_mark: |
-|  10.0.0 | :x:                |
-| < 9.9.x | :x:                |
+|> 1.0.1 | :white_check_mark: |
+|  1.0.0 | :x:                |
+| < 0.9.9.x | :x:                |
 
 ## Reporting a Vulnerability
 
