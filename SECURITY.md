@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Any version bellow 10.0.1 is officially **not** supported as a secure and LTS version due to developement reasons. Versions above 10.0.1 are the official versions that are securely supported.
+Any version bellow 1.0.1 is officially **not** supported as a secure and LTS version due to developement reasons. Versions above 1.0.1 are the official versions that are securely supported.
 
 | Version | Supported          |
 | ------- | ------------------ |
