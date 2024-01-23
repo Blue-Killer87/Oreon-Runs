@@ -20,7 +20,13 @@ from kivy_garden.mapview.constants import \
     (MIN_LONGITUDE, MAX_LONGITUDE, MIN_LATITUDE, MAX_LATITUDE)
 from math import radians, log, tan, cos, pi
 import random
-    
+import zbarlight
+from kivy.uix.camera import Camera
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.graphics.texture import Texture
+from kivy.graphics import Rectangle
+
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
@@ -180,7 +186,32 @@ class LineDrawLayer(MapLayer):
             # Retrieve the last saved coordinate space context
             PopMatrix()
 
+class QRScannerLayout(BoxLayout):
+    orientation = "vertical"
+    pass
 
+class ScannerScreen(Screen):
+    def __init__(self, **kwargs):
+        super(ScannerScreen, self).__init__(**kwargs)
+        self.camera = Camera(resolution=(960, 720), play=True)
+        self.label = Label(text="Scan a QR code")
+        self.layout = QRScannerLayout()
+
+        self.layout.add_widget(self.label)
+        self.layout.add_widget(self.camera)
+        self.add_widget(self.layout)
+
+    def scan(self, dt):
+        camera_texture = self.camera.texture
+
+        if camera_texture:
+            data = camera_texture.pixels
+            width, height = camera_texture.size
+
+            codes = zbarlight.scan_codes(['qrcode'], data, width, height)
+
+            if codes:
+                self.label.text = f"QR Code: {codes[0].decode('utf-8')}"
 
 class OreonApp(MDApp):
     
@@ -188,8 +219,73 @@ class OreonApp(MDApp):
             self.theme_cls.theme_style = "Dark" #Background
             self.theme_cls.primary_palette = "Blue" #Main color
             self.mapviewRun = self.root.get_screen('run').ids.mapview
+            sm = ScreenManager()
+
+            welcome_screen = WelcomeScreen(name='welcome')
+            sm.add_widget(welcome_screen)
+
+            choose_track_screen = ChooseTrackScreen(name='choosetrack')
+            sm.add_widget(choose_track_screen)
+
+            run_screen = RunScreen(name='run')
+            sm.add_widget(run_screen)
+
+            tracking_screen = TrackingScreen(name='tracking')
+            sm.add_widget(tracking_screen)
+
+            create_screen = CreateScreen(name='create')
+            sm.add_widget(create_screen)
+
+            scanner_screen = ScannerScreen(name='scan')
+            sm.add_widget(scanner_screen)
+
+            return sm
 
 
+
+    # Schedule movement updates every 5 seconds
+    # Clock.schedule_interval(self.update_movement, 5)
+  
+    
+   
+
+
+    
+    # If platform is android, turn GPS on and set it to method on_location
+    if platform == "android":
+        def on_start(self):
+            gps.configure(on_location=self.on_location)
+            gps.start(minTime=5000, minDistance=1)
+            print("gps.py: Android detected. Requesting permissions")
+            self.request_android_permissions()
+            self.oldlat = 0
+            self.oldlon = 0
+            
+
+        @mainthread
+        #Main GPS method, calls itself every time the app gets new GPS telemtry
+        def on_location(self, **kwargs):
+            if (kwargs['accuracy'] < 80 or kwargs['accuracy'] > 100):
+                print(kwargs)
+                self.aproxgpslat = kwargs["lat"]
+                self.aproxgpslon = kwargs["lon"]
+                Clock.schedule_once(self.proc_aprox_location, 5)
+            else:
+                print(kwargs)
+                self.gpslat = kwargs["lat"]
+                self.gpslon = kwargs["lon"]
+                Clock.schedule_once(self.proc_location, 5)
+
+        def proc_aprox_location(self, dt):        
+            self.aproxpoint = MapMarker(lat = self.aproxgpslat, lon = self.aproxgpslon, source="data/Blank.png")
+            #mapview.remove_marker(self.point)
+            self.mapviewRun.add_marker(self.aproxpoint)
+
+        def proc_location(self, dt):        
+            self.point = MapMarker(lat = self.gpslat, lon = self.gpslon)
+            #mapview.remove_marker(self.point)
+            self.mapviewRun.add_marker(self.point)
+                
             # You can import JSON data here or:
             my_coordinates = [[51.505807, -0.128513], [51.126251, 1.327067],
                             [50.959086, 1.827652], [48.85519, 2.35021]]
@@ -198,45 +294,16 @@ class OreonApp(MDApp):
             lml1 = LineDrawLayer(coordinates=my_coordinates, color=[1, 0, 0, 1])
             self.mapviewRun.add_layer(lml1, mode="scatter")
             
-
-            # Blue route (two points)
-            my_coordinates = [[50.505807, 14.128513], [48.85519, 2.35021]]
-            lml3 = LineDrawLayer(coordinates=my_coordinates, color=[0, 0, 1, 1])
-            self.mapviewRun.add_layer(lml3, mode="scatter")
-
-        
-    # Schedule movement updates every 5 seconds
-    # Clock.schedule_interval(self.update_movement, 5)
-  
-    
-   
-
-    dialog = None
-
-    
-    # If platform is android, turn GPS on and set it to method on_location
-    if platform == "android":
-        def on_start(self):
-            gps.configure(on_location=self.on_location)
-            gps.start(minTime=1000, minDistance=0)
-            print("gps.py: Android detected. Requesting permissions")
-            self.request_android_permissions()
-
-
-        @mainthread
-        #Main GPS method, calls itself every time the app gets new GPS telemtry
-        def on_location(self, **kwargs):
-            if (kwargs['accuracy'] < 60 or kwargs['accuracy'] > 100):
-                return
-            else:
-                print(kwargs)
-                self.gpslat = kwargs["lat"]
-                self.gpslon = kwargs["lon"]
-                self.point = MapMarker(lat = self.gpslat, lon = self.gpslon)
-                #mapview.remove_marker(self.point)
-                self.mapviewRun.add_marker(self.point)
+            if self.oldlat != 0 and self.oldlon != 0:
+                # Blue route (two points)
+                my_coordinates = [[self.oldlat, self.oldlon], [self.gpslat, self.gpslon]]
+                lml3 = LineDrawLayer(coordinates=my_coordinates, color=[0, 0, 1, 1])
+                self.mapviewRun.add_layer(lml3, mode="scatter")
                 
-                    
+            else:
+                print("still initializing")
+            self.oldlat = self.gpslat
+            self.oldlon = self.gpslon
 
     #If platform is not Android, don't turn GPS on      
     else:
@@ -263,11 +330,11 @@ class OreonApp(MDApp):
             else:
                 print("callback. Some permissions refused.")
 
-        request_permissions([Permission.ACCESS_COARSE_LOCATION,
+        request_permissions([#Permission.ACCESS_COARSE_LOCATION,
                             Permission.ACCESS_FINE_LOCATION], callback)
     
+    dialog = None
 
-    @mainthread
     def show_alert_dialog(self):
         if not self.dialog:
             self.dialog = MDDialog(
