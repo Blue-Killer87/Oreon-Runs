@@ -37,7 +37,7 @@ version = 2.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.7.6, hostpython3==3.7.6, kivy, pillow, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet,idna, urllib3, libzbar, pyzbar==0.1.8, Camera, zbarcam, zbarlight, qrcode, sdl2_ttf, certifi, KivyMD, https://github.com/HyTurtle/plyer/archive/master.zip
+requirements = python3==3.10.12, hostpython3==3.7.6, Kivy==2.2.1, pillow, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, kivy_garden.zbarcam, qrcode, sdl2_ttf, certifi, kivyMD, zbarlight, https://github.com/HyTurtle/plyer/archive/master.zip
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -101,7 +101,7 @@ android.permissions = android.permission.INTERNET, CAMERA, ACCESS_FINE_LOCATION,
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 31
+#android.api = 33
 
 # (int) Minimum API your APK / AAB will support.
 #android.minapi = 21
