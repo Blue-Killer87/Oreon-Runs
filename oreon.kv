@@ -114,6 +114,17 @@ ScreenManager:
         pos_hint: {"center_x": .04, "center_y": .95}
         md_bg_color: .1,.2,1,1
 
+<ScanQRScreen>
+    name: "scan"
+    BoxLayout:
+        orientation: 'vertical'
+        ZBarCam:
+            id: zbarcam
+            camera_index: 0
+        Label:
+            size_hint: None, None
+            size: self.texture_size[0], 50
+            text: ', '.join([str(symbol.data) for symbol in zbarcam.symbols])
 
 
 
