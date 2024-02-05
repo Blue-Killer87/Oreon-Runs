@@ -186,32 +186,7 @@ class LineDrawLayer(MapLayer):
             # Retrieve the last saved coordinate space context
             PopMatrix()
 
-class QRScannerLayout(BoxLayout):
-    orientation = "vertical"
-    pass
 
-class ScannerScreen(Screen):
-    def __init__(self, **kwargs):
-        super(ScannerScreen, self).__init__(**kwargs)
-        self.camera = Camera(resolution=(960, 720), play=True)
-        self.label = Label(text="Scan a QR code")
-        self.layout = QRScannerLayout()
-
-        self.layout.add_widget(self.label)
-        self.layout.add_widget(self.camera)
-        self.add_widget(self.layout)
-
-    def scan(self, dt):
-        camera_texture = self.camera.texture
-
-        if camera_texture:
-            data = camera_texture.pixels
-            width, height = camera_texture.size
-
-            codes = zbarlight.scan_codes(['qrcode'], data, width, height)
-
-            if codes:
-                self.label.text = f"QR Code: {codes[0].decode('utf-8')}"
 
 class OreonApp(MDApp):
     
@@ -219,28 +194,7 @@ class OreonApp(MDApp):
             self.theme_cls.theme_style = "Dark" #Background
             self.theme_cls.primary_palette = "Blue" #Main color
             self.mapviewRun = self.root.get_screen('run').ids.mapview
-            sm = ScreenManager()
-
-            welcome_screen = WelcomeScreen(name='welcome')
-            sm.add_widget(welcome_screen)
-
-            choose_track_screen = ChooseTrackScreen(name='choosetrack')
-            sm.add_widget(choose_track_screen)
-
-            run_screen = RunScreen(name='run')
-            sm.add_widget(run_screen)
-
-            tracking_screen = TrackingScreen(name='tracking')
-            sm.add_widget(tracking_screen)
-
-            create_screen = CreateScreen(name='create')
-            sm.add_widget(create_screen)
-
-            scanner_screen = ScannerScreen(name='scan')
-            sm.add_widget(scanner_screen)
-
-            return sm
-
+            
 
 
     # Schedule movement updates every 5 seconds
@@ -368,12 +322,3 @@ if __name__ == '__main__':
     OreonApp().run()
 
 
-'''
-Otázky:
-
-Musí být sledování polohy? Je to správné?
-- Poloha skrytá, jen pro systémové využití. Trackování zobrazit až po ukončení.
-
-QR tisk na místě? Místo toho proximity checker?
-- Vytvořit předem QR kódy s číslem stanoviště. Přiřadit zahashované číslo k stanovišti na mapě. Proximity checkem zkontrolovat že tam vážně jsi.
-'''
