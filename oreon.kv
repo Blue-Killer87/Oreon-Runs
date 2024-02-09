@@ -1,7 +1,6 @@
 #:import MapSource kivy_garden.mapview.MapSource
 #:import utils kivy.utils
-#:import ZBarCam kivy_garden.zbarcam.zbarcam
-#:import ZBarSymbol pyzbar.pyzbar.ZBarSymbol
+
 
 ScreenManager:
     WelcomeScreen:
@@ -101,7 +100,7 @@ ScreenManager:
 
     MDRectangleFlatIconButton:
         text:"Load from QR code"
-        on_press: app.root.current = "scan"
+        on_press: app.root.current = "scan_qr"
         font_size: sp(30)
         icon:"qrcode-scan"
         size_hint: .6, .3
@@ -115,6 +114,29 @@ ScreenManager:
         md_bg_color: .1,.2,1,1
 
 
+
+<ScanQRScreen>:
+    name: 'scan_qr'
+	BoxLayout:
+		orientation: 'vertical'
+		ScanAnalyze:
+			id:preview
+			aspect_ratio: '16:9'
+			extracted_data:root.got_result
+
+		MDLabel:	
+			size_hint_y: None
+			height:'130dp'
+			id:ti
+
+        MDFillRoundFlatIconButton:
+            text: "Go back"
+            icon: "keyboard-backspace" 
+            on_release: app.root.current="welcome"
+            font_size: sp(30)  
+            size_hint:(.3, .1)
+            pos_hint: {"center_x": .5, "center_y": .1}
+            md_bg_color: .1,.2,1,1
 
 
 <RunScreen>
@@ -154,7 +176,7 @@ ScreenManager:
 
                 MDIconButton:
 
-                    on_press: app.root.current = "scan" 
+                    on_press: app.root.current = "scan_qr" 
                     font_size: sp(20)
                     icon:"qrcode-scan"  
                     halign: 'center'

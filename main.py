@@ -1,14 +1,11 @@
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen, ScreenManager
-from kivy.core import window
 from kivymd.app import MDApp
-from kivy.clock import mainthread
+from kivy.clock import mainthread, Clock
 from kivy.utils import platform
 from plyer import gps
 from kivy.properties import StringProperty, ObjectProperty
 from kivy_garden.mapview import MapMarker, MapView, MapMarkerPopup, MapLayer
-from kivy.animation import Animation
-from kivy_garden.mapview import MapSource
 from kivy.core.window import Window
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
@@ -19,46 +16,13 @@ from kivy_garden.mapview.utils import clamp
 from kivy_garden.mapview.constants import \
     (MIN_LONGITUDE, MAX_LONGITUDE, MIN_LATITUDE, MAX_LATITUDE)
 from math import radians, log, tan, cos, pi
-import random
-import zbarlight
-from kivy.uix.camera import Camera
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.graphics.texture import Texture
-from kivy.graphics import Rectangle
+from camera4kivy import Preview
+from PIL import Image
+from pyzbar.pyzbar import decode
 
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
-
-
-
-class WelcomeScreen(Screen):
-    pass
-
-class ChooseScreen(Screen):
-    pass
-
-class RunScreen(Screen):
-    pass
-
-class TrackingScreen(Screen):
-    pass
-
-class CreateScreen(Screen):
-    pass
-
-class ScanQRScreen(Screen):
-    pass
-
-class CreateQRScreen(Screen):
-    pass
-
-class ChooseTrackScreen(Screen):
-    pass
-
-class Main(ScreenManager):
-    pass
 
 class LineDrawLayer(MapLayer):
     def __init__(self, coordinates=[[0, 0], [0, 0]], color=[0, 0, 1, 1], **kwargs):
@@ -186,32 +150,74 @@ class LineDrawLayer(MapLayer):
             # Retrieve the last saved coordinate space context
             PopMatrix()
 
-class QRScannerLayout(BoxLayout):
-    orientation = "vertical"
+
+
+class WelcomeScreen(Screen):
     pass
 
-class ScannerScreen(Screen):
-    def __init__(self, **kwargs):
-        super(ScannerScreen, self).__init__(**kwargs)
-        self.camera = Camera(resolution=(960, 720), play=True)
-        self.label = Label(text="Scan a QR code")
-        self.layout = QRScannerLayout()
+class ChooseScreen(Screen):
+    pass
 
-        self.layout.add_widget(self.label)
-        self.layout.add_widget(self.camera)
-        self.add_widget(self.layout)
+class RunScreen(Screen):
+    def build(self):
+        self.running = False
 
-    def scan(self, dt):
-        camera_texture = self.camera.texture
+    def on_enter(self, *args):
+        self.running = True
+        print('Inicialising GPS and stuff')
 
-        if camera_texture:
-            data = camera_texture.pixels
-            width, height = camera_texture.size
+    
 
-            codes = zbarlight.scan_codes(['qrcode'], data, width, height)
+        
+    def on_leave(self, *args):
+        self.running = False
+class TrackingScreen(Screen):
+    pass
 
-            if codes:
-                self.label.text = f"QR Code: {codes[0].decode('utf-8')}"
+class CreateScreen(Screen):
+    pass
+
+class CreateQRScreen(Screen):
+    pass
+
+class ScanAnalyze(Preview):
+	extracted_data=ObjectProperty(None)
+
+
+	def analyze_pixels_callback(self, pixels, image_size, image_pos, scale, mirror):
+		pimage=Image.frombytes(mode='RGBA',size=image_size,data=pixels)
+		list_of_all_barcodes=decode(pimage)
+		
+
+		if list_of_all_barcodes:
+			first_barcode_data = list_of_all_barcodes[0].data.decode('utf-8')
+			if self.extracted_data:
+				self.extracted_data(first_barcode_data)
+			else:
+				print("Not found")
+
+
+class ScanQRScreen(Screen):
+
+
+    def on_enter(self, *args):
+         self.ids.preview.connect_camera(enable_analyze_pixels = True,default_zoom=0.0)
+
+    @mainthread
+    def got_result(self,result):
+        self.ids.ti.text=str(result)
+
+    def on_leave(self, *args):
+        self.ids.preview.disconnect_camera()
+
+class ChooseTrackScreen(Screen):
+    def on_enter(self, *args):
+        print('Testing message, ignore it.')
+
+class Main(ScreenManager):
+    pass
+
+
 
 class OreonApp(MDApp):
     
@@ -219,53 +225,21 @@ class OreonApp(MDApp):
             self.theme_cls.theme_style = "Dark" #Background
             self.theme_cls.primary_palette = "Blue" #Main color
             self.mapviewRun = self.root.get_screen('run').ids.mapview
-            sm = ScreenManager()
+            if platform == 'android':
+                self.request_android_permissions()
 
-            welcome_screen = WelcomeScreen(name='welcome')
-            sm.add_widget(welcome_screen)
-
-            choose_track_screen = ChooseTrackScreen(name='choosetrack')
-            sm.add_widget(choose_track_screen)
-
-            run_screen = RunScreen(name='run')
-            sm.add_widget(run_screen)
-
-            tracking_screen = TrackingScreen(name='tracking')
-            sm.add_widget(tracking_screen)
-
-            create_screen = CreateScreen(name='create')
-            sm.add_widget(create_screen)
-
-            scanner_screen = ScannerScreen(name='scan')
-            sm.add_widget(scanner_screen)
-
-            return sm
-
-
-
-    # Schedule movement updates every 5 seconds
-    # Clock.schedule_interval(self.update_movement, 5)
-  
-    
-   
-
-
-    
-    # If platform is android, turn GPS on and set it to method on_location
     if platform == "android":
         def on_start(self):
             gps.configure(on_location=self.on_location)
             gps.start(minTime=5000, minDistance=1)
             print("gps.py: Android detected. Requesting permissions")
-            self.request_android_permissions()
             self.oldlat = 0
             self.oldlon = 0
             
 
-        @mainthread
         #Main GPS method, calls itself every time the app gets new GPS telemtry
         def on_location(self, **kwargs):
-            if (kwargs['accuracy'] < 80 or kwargs['accuracy'] > 100):
+            if (kwargs['accuracy'] < 80 or kwargs['accuracy'] > 100) and self.running == True:
                 print(kwargs)
                 self.aproxgpslat = kwargs["lat"]
                 self.aproxgpslon = kwargs["lon"]
@@ -299,8 +273,8 @@ class OreonApp(MDApp):
                 my_coordinates = [[self.oldlat, self.oldlon], [self.gpslat, self.gpslon]]
                 lml3 = LineDrawLayer(coordinates=my_coordinates, color=[0, 0, 1, 1])
                 self.mapviewRun.add_layer(lml3, mode="scatter")
-                
-            else:
+
+            else:    
                 print("still initializing")
             self.oldlat = self.gpslat
             self.oldlon = self.gpslon
@@ -308,16 +282,6 @@ class OreonApp(MDApp):
     #If platform is not Android, don't turn GPS on      
     else:
         print("Desktop version starting.")
-
-        def center_on_gps(self):
-            print("Not implemented in desktop version")
- 
-        
-        
-    
-    def update_movement(self, dt):
-        pass
-
 
     def request_android_permissions(self):
 
@@ -331,7 +295,7 @@ class OreonApp(MDApp):
                 print("callback. Some permissions refused.")
 
         request_permissions([#Permission.ACCESS_COARSE_LOCATION,
-                            Permission.ACCESS_FINE_LOCATION], callback)
+                            Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA,Permission.RECORD_AUDIO], callback)
     
     dialog = None
 
@@ -363,17 +327,7 @@ class OreonApp(MDApp):
         self.root.current = "welcome"
         self.dialog.dismiss()
 
-
 if __name__ == '__main__':
     OreonApp().run()
 
 
-'''
-Otázky:
-
-Musí být sledování polohy? Je to správné?
-- Poloha skrytá, jen pro systémové využití. Trackování zobrazit až po ukončení.
-
-QR tisk na místě? Místo toho proximity checker?
-- Vytvořit předem QR kódy s číslem stanoviště. Přiřadit zahashované číslo k stanovišti na mapě. Proximity checkem zkontrolovat že tam vážně jsi.
-'''
