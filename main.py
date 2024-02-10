@@ -227,7 +227,7 @@ class OreonApp(MDApp):
             self.mapviewRun = self.root.get_screen('run').ids.mapview
             if platform == 'android':
                 self.request_android_permissions()
-
+    
     if platform == "android":
         def on_start(self):
             gps.configure(on_location=self.on_location)
@@ -282,7 +282,7 @@ class OreonApp(MDApp):
     #If platform is not Android, don't turn GPS on      
     else:
         print("Desktop version starting.")
-
+    
     def request_android_permissions(self):
 
         from android.permissions import request_permissions, Permission
@@ -294,8 +294,7 @@ class OreonApp(MDApp):
             else:
                 print("callback. Some permissions refused.")
 
-        request_permissions([#Permission.ACCESS_COARSE_LOCATION,
-                            Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA,Permission.RECORD_AUDIO], callback)
+        request_permissions([Permission.INTERNET, Permission.ACCESS_COARSE_LOCATION, Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA], callback)
     
     dialog = None
 
