@@ -20,7 +20,14 @@ from camera4kivy import Preview
 from PIL import Image
 from pyzbar.pyzbar import decode
 from kivy.uix.label import Label
-from kivy.metrics import dp
+from kivy.metrics import dp, sp
+from kivy_garden.qrcode import QRCodeWidget
+from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.popup import Popup
+import os
+from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.label import MDLabel
 
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
@@ -210,7 +217,35 @@ class ChooseTrackScreen(Screen):
 class Main(ScreenManager):
     pass
 
+class FileChooserPopup(Popup):
+    file_chooser = ObjectProperty(None)
 
+    def __init__(self, qr_widget, **kwargs):
+        super(FileChooserPopup, self).__init__(**kwargs)
+        self.qr_widget = qr_widget
+        self.file_chooser = FileChooserIconView()
+        button_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=44)
+        submit_button = Button(text='Submit', size_hint_x=None, width=100, on_press=self.save_qr)
+        cancel_button = Button(text='Cancel', size_hint_x=None, width=100, on_press=self.dismiss_popup)
+        button_layout.add_widget(submit_button)
+        button_layout.add_widget(cancel_button)
+
+        main_layout = BoxLayout(orientation='vertical')
+        main_layout.add_widget(self.file_chooser)
+        main_layout.add_widget(button_layout)
+
+        self.content = main_layout
+
+    def save_qr(self, instance):
+        selected_path = self.file_chooser.path
+        image_path = os.path.join(selected_path)
+
+        self.qr_widget.export_as_image('OreonQRcode', image_path)
+        print(f"QR code saved as {image_path}")
+        self.dismiss_popup()
+
+    def dismiss_popup(self):
+        self.dismiss()
 
 class OreonApp(MDApp):
     
@@ -226,8 +261,10 @@ class OreonApp(MDApp):
             self.stopwatch = Label(text='00:00:00', font_size=dp(40), halign='center', valign='middle', color=(0,0,.5,1), markup='True')
             self.stopwatch.size_hint = (None, None)
             self.stopwatch.pos_hint = {'center_x': 0.5, 'center_y': 0.87}
+            self.generated = False
+            self.QR = None
+            self.file_chooser_popup = None
             
-
             if platform == 'android':
                 self.request_android_permissions()
     
@@ -338,8 +375,42 @@ class OreonApp(MDApp):
         
         Clock.unschedule(self.update)
 
+    def submit_create(self):
+        self.root.current = "createqr"
+        self.a = 0
+        self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
+        self.infoLabel = MDLabel(text='You can create and download your QR codes here, one by one.', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
+        self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
+        self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
+        self.WhichQR = Label(text='', font_size=dp(25), halign='center', valign='middle', color=(1,1,1,1), markup='True')
+        self.WhichQR.pos_hint = {'center_x': 0.5, 'center_y': 0.95}
+        self.root.get_screen('createqr').ids.floatqr.add_widget(self.WhichQR)
+        if self.generated == True:
+            self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+        else:
+            pass
+        self.generated = False
 
-
+    def gen_qr(self):    
+        self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+        self.a += 1 
+        if self.a <= self.checkpoints:
+            self.remaining = self.checkpoints - 1
+            self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"QRcodeCheckpoint {self.a}"))
+            QRCodeWidget.size_hint=(.9, .6)
+            QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
+            self.WhichQR.text=f'Checkpoint #{self.a}'
+            self.generated = True
+            self.QR = QRCodeWidget()
+            
+        else:
+            self.root.current = "tracking"
+            self.WhichQR.text=''
+    def downloadQR(self):
+        if hasattr(self, 'QR'):
+            self.file_chooser_popup = FileChooserPopup(self.QR)
+            self.file_chooser_popup.open()
+            print('Exported the image')
 
     def get_counter_data(self):
         # Return the current counter data
@@ -439,6 +510,10 @@ class OreonApp(MDApp):
             self.started = False
             self.dialog = None
             self.stop_counter()
+            try:
+                self.mapviewRun.remove_marker(self.point)
+            except:
+                print("Something went wrong with removing the pins")
 
 
         else: 
@@ -460,3 +535,4 @@ if __name__ == '__main__':
     OreonApp().run()
 
 
+#This one hurt.
