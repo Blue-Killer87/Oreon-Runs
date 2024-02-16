@@ -249,6 +249,7 @@ ScreenManager:
             font_size: sp(40)
         
         MDTextField:
+            id: tname
             hint_text: "Track name"
             helper_text: "Insert your new track name here"
             helper_text_mode: "on_focus"
@@ -258,6 +259,7 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
 
         MDTextField:
+            id: tdescription
             hint_text: "Description"
             helper_text: "Add your description for the track"
             helper_text_mode: "on_focus"
@@ -267,6 +269,7 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
       
         MDTextField:
+            id: tcheckpoints
             hint_text: "Checkpoints"
             helper_text: "Specify number of checkpoints, set higher if not sure."
             helper_text_mode: "on_focus"
@@ -278,7 +281,7 @@ ScreenManager:
         MDFillRoundFlatIconButton:
             text: "Submit"
             icon: "keyboard-return" 
-            on_release: app.root.current="tracking"
+            on_release: app.submit_create()
             font_size: sp(30)  
             size_hint:(.3, .1)
             pos_hint: {"center_x": .5, "center_y": .39}
@@ -308,6 +311,23 @@ ScreenManager:
         pos_hint: {"center_x": .04, "center_y": .95}
         md_bg_color: .1,.2,1,1
 
+<CreateQRScreen>
+    name: 'createqr'
+    FloatLayout:
+        id: floatqr
 
 
-        
+
+        MDFillRoundFlatIconButton:
+            text: 'Generate QR code'
+            icon: 'qrcode-edit'
+            pos_hint: {"center_x": .5, "center_y": .21}
+            font_size: sp(30)
+            on_release: app.gen_qr()
+
+        MDFillRoundFlatIconButton:
+            text: 'Download QR code'
+            icon: 'download'
+            pos_hint: {"center_x": .5, "center_y": .06}
+            font_size: sp(30)
+            on_release: app.downloadQR()
