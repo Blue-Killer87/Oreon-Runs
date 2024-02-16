@@ -5,6 +5,7 @@
 ScreenManager:
     WelcomeScreen:
     ChooseScreen:
+    RunResultScreen:
     RunScreen:
     TrackingScreen:
     CreateScreen:
@@ -85,6 +86,7 @@ ScreenManager:
 
 
 
+
 <ChooseTrackScreen>
     name: "choosetrack"
 
@@ -126,7 +128,7 @@ ScreenManager:
 
 		MDLabel:	
 			size_hint_y: None
-			height:'130dp'
+			height:self.height
 			id:ti
 
         MDFillRoundFlatIconButton:
@@ -137,6 +139,42 @@ ScreenManager:
             size_hint:(.3, .1)
             pos_hint: {"center_x": .5, "center_y": .1}
             md_bg_color: .1,.2,1,1
+
+
+<RunResultScreen>
+    name: "preview"
+
+    RelativeLayout:
+
+        MapView:
+            id: mapview
+            lat: 49.5
+            lon: 14.8
+            zoom: 6
+            map_source: "osm"
+            #size_hint: .5, .5
+            #pos_hint: {"x": .25, "y": .25}
+
+            #on_map_relocated: mapview2.sync_to(self)
+            #on_map_relocated: mapview3.sync_to(self)
+            #on_map_relocated: app.restrict_movement
+
+
+        Toolbar:
+            top: root.top
+            FloatLayout:
+               
+
+                MDIconButton:
+
+                    on_press: app.show_alert_dialog()
+                    font_size: sp(20)
+                    icon:"keyboard-backspace"  
+                    halign: 'center'
+                    pos_hint: {"center_x": .85, "center_y": .5}
+                    size_hint: (0.3, 1)
+                    multiline: True
+                    md_bg_color: .1,.2,1,1
 
 
 <RunScreen>
@@ -159,11 +197,12 @@ ScreenManager:
 
 
         Toolbar:
+            id: toolbar
             top: root.top
             FloatLayout:
                 MDIconButton:
                     id: center_button
-                    on_release: app.startRun()
+                    on_release: app.start()
                     halign: 'center'
                     font_size: sp(20)
                     icon:"play-circle-outline"
@@ -196,9 +235,7 @@ ScreenManager:
                     pos_hint: {"center_x": .85, "center_y": .5}
                     size_hint: (0.3, 1)
                     multiline: True
-                    md_bg_color: .1,.2,1,1
-
-            
+                    md_bg_color: .1,.2,1,1            
 
 
 <CreateScreen>
@@ -212,6 +249,7 @@ ScreenManager:
             font_size: sp(40)
         
         MDTextField:
+            id: tname
             hint_text: "Track name"
             helper_text: "Insert your new track name here"
             helper_text_mode: "on_focus"
@@ -221,6 +259,7 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
 
         MDTextField:
+            id: tdescription
             hint_text: "Description"
             helper_text: "Add your description for the track"
             helper_text_mode: "on_focus"
@@ -230,6 +269,7 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
       
         MDTextField:
+            id: tcheckpoints
             hint_text: "Checkpoints"
             helper_text: "Specify number of checkpoints, set higher if not sure."
             helper_text_mode: "on_focus"
@@ -241,7 +281,7 @@ ScreenManager:
         MDFillRoundFlatIconButton:
             text: "Submit"
             icon: "keyboard-return" 
-            on_release: app.root.current="tracking"
+            on_release: app.submit_create()
             font_size: sp(30)  
             size_hint:(.3, .1)
             pos_hint: {"center_x": .5, "center_y": .39}
@@ -271,6 +311,23 @@ ScreenManager:
         pos_hint: {"center_x": .04, "center_y": .95}
         md_bg_color: .1,.2,1,1
 
+<CreateQRScreen>
+    name: 'createqr'
+    FloatLayout:
+        id: floatqr
 
 
-        
+
+        MDFillRoundFlatIconButton:
+            text: 'Generate QR code'
+            icon: 'qrcode-edit'
+            pos_hint: {"center_x": .5, "center_y": .21}
+            font_size: sp(30)
+            on_release: app.gen_qr()
+
+        MDFillRoundFlatIconButton:
+            text: 'Download QR code'
+            icon: 'download'
+            pos_hint: {"center_x": .5, "center_y": .06}
+            font_size: sp(30)
+            on_release: app.downloadQR()

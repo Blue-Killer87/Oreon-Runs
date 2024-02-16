@@ -19,6 +19,15 @@ from math import radians, log, tan, cos, pi
 from camera4kivy import Preview
 from PIL import Image
 from pyzbar.pyzbar import decode
+from kivy.uix.label import Label
+from kivy.metrics import dp, sp
+from kivy_garden.qrcode import QRCodeWidget
+from kivy.uix.filechooser import FileChooserIconView
+from kivy.uix.popup import Popup
+import os
+from kivy.uix.button import Button
+from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.label import MDLabel
 
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
@@ -159,18 +168,11 @@ class ChooseScreen(Screen):
     pass
 
 class RunScreen(Screen):
-    def build(self):
-        self.running = False
+    pass
 
-    def on_enter(self, *args):
-        self.running = True
-        print('Inicialising GPS and stuff')
+class RunResultScreen(Screen):
+    pass
 
-    
-
-        
-    def on_leave(self, *args):
-        self.running = False
 class TrackingScreen(Screen):
     pass
 
@@ -211,13 +213,39 @@ class ScanQRScreen(Screen):
         self.ids.preview.disconnect_camera()
 
 class ChooseTrackScreen(Screen):
-    def on_enter(self, *args):
-        print('Testing message, ignore it.')
-
+    pass
 class Main(ScreenManager):
     pass
 
+class FileChooserPopup(Popup):
+    file_chooser = ObjectProperty(None)
 
+    def __init__(self, qr_widget, **kwargs):
+        super(FileChooserPopup, self).__init__(**kwargs)
+        self.qr_widget = qr_widget
+        self.file_chooser = FileChooserIconView()
+        button_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=44)
+        submit_button = Button(text='Submit', size_hint_x=None, width=100, on_press=self.save_qr)
+        cancel_button = Button(text='Cancel', size_hint_x=None, width=100, on_press=self.dismiss_popup)
+        button_layout.add_widget(submit_button)
+        button_layout.add_widget(cancel_button)
+
+        main_layout = BoxLayout(orientation='vertical')
+        main_layout.add_widget(self.file_chooser)
+        main_layout.add_widget(button_layout)
+
+        self.content = main_layout
+
+    def save_qr(self, instance):
+        selected_path = self.file_chooser.path
+        image_path = os.path.join(selected_path)
+
+        self.qr_widget.export_as_image('OreonQRcode', image_path)
+        print(f"QR code saved as {image_path}")
+        self.dismiss_popup()
+
+    def dismiss_popup(self):
+        self.dismiss()
 
 class OreonApp(MDApp):
     
@@ -225,13 +253,25 @@ class OreonApp(MDApp):
             self.theme_cls.theme_style = "Dark" #Background
             self.theme_cls.primary_palette = "Blue" #Main color
             self.mapviewRun = self.root.get_screen('run').ids.mapview
+            self.started = False
+
+            self.seconds = 0
+            self.minutes = 0
+            self.hours = 0  
+            self.stopwatch = Label(text='00:00:00', font_size=dp(40), halign='center', valign='middle', color=(0,0,.5,1), markup='True')
+            self.stopwatch.size_hint = (None, None)
+            self.stopwatch.pos_hint = {'center_x': 0.5, 'center_y': 0.87}
+            self.generated = False
+            self.QR = None
+            self.file_chooser_popup = None
+            
             if platform == 'android':
                 self.request_android_permissions()
-
+    
     if platform == "android":
         def on_start(self):
             gps.configure(on_location=self.on_location)
-            gps.start(minTime=5000, minDistance=1)
+            #gps.start(minTime=5000, minDistance=1)
             print("gps.py: Android detected. Requesting permissions")
             self.oldlat = 0
             self.oldlon = 0
@@ -239,21 +279,19 @@ class OreonApp(MDApp):
 
         #Main GPS method, calls itself every time the app gets new GPS telemtry
         def on_location(self, **kwargs):
-            if (kwargs['accuracy'] < 80 or kwargs['accuracy'] > 100) and self.running == True:
+            print("Got location")
+            if (kwargs['accuracy'] < 90 or kwargs['accuracy'] > 100):
                 print(kwargs)
-                self.aproxgpslat = kwargs["lat"]
-                self.aproxgpslon = kwargs["lon"]
-                Clock.schedule_once(self.proc_aprox_location, 5)
+                print('Location is bad')
+                #self.aproxgpslat = kwargs["lat"]
+                #self.aproxgpslon = kwargs["lon"]
+                #Clock.schedule_once(self.proc_aprox_location, 5)
             else:
                 print(kwargs)
+                print('Location is fine')
                 self.gpslat = kwargs["lat"]
                 self.gpslon = kwargs["lon"]
-                Clock.schedule_once(self.proc_location, 5)
-
-        def proc_aprox_location(self, dt):        
-            self.aproxpoint = MapMarker(lat = self.aproxgpslat, lon = self.aproxgpslon, source="data/Blank.png")
-            #mapview.remove_marker(self.point)
-            self.mapviewRun.add_marker(self.aproxpoint)
+                Clock.schedule_once(self.proc_location, 0)
 
         def proc_location(self, dt):        
             self.point = MapMarker(lat = self.gpslat, lon = self.gpslon)
@@ -283,6 +321,102 @@ class OreonApp(MDApp):
     else:
         print("Desktop version starting.")
 
+    def start(self):
+        
+        print("Run starting...")
+        if platform == 'android':
+            print('Inicialising GPS and stuff')
+            gps.start(minTime= 1000, minDistance=5)
+        self.started = True
+        try:
+            self.root.get_screen('run').add_widget(self.stopwatch)
+            Clock.schedule_interval(self.update, 1)
+        except:
+            print("Stopwatch error: Already existing")
+
+
+
+    def update(self, *args):
+        self.seconds += 1
+
+        if self.seconds == 60:
+            self.seconds = 0
+            self.minutes += 1
+
+            if self.minutes == 60:
+                self.minutes = 0
+                self.hours += 1
+
+        # Update the label text with leading zeros
+        self.stopwatch.text = f'{self.format_digit(self.hours)}:{self.format_digit(self.minutes)}:{self.format_digit(self.seconds)}'
+
+
+
+    def format_digit(self, value):
+        # Helper function to add leading zero if value is less than 10
+        return f'{value:02}'
+
+
+
+
+    def toggle_counter(self, on):
+        # Turn on/off the counter label by adjusting its opacity
+        self.stopwatch.opacity = 1.0 if on else 0.0
+
+    def stop_counter(self):
+        # Stop the counter by canceling the scheduled updates
+        self.root.get_screen('run').remove_widget(self.stopwatch)
+        self.root.get_screen('preview').add_widget(self.stopwatch)
+
+        counter_data = self.get_counter_data()
+
+        self.stopwatch.text = f"Time: {self.format_digit(counter_data['hours'])}:{self.format_digit(counter_data['minutes'])}:{self.format_digit(counter_data['seconds'])}"
+        print(counter_data)
+        
+        Clock.unschedule(self.update)
+
+    def submit_create(self):
+        self.root.current = "createqr"
+        self.a = 0
+        self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
+        self.infoLabel = MDLabel(text='You can create and download your QR codes here, one by one.', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
+        self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
+        self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
+        self.WhichQR = Label(text='', font_size=dp(25), halign='center', valign='middle', color=(1,1,1,1), markup='True')
+        self.WhichQR.pos_hint = {'center_x': 0.5, 'center_y': 0.95}
+        self.root.get_screen('createqr').ids.floatqr.add_widget(self.WhichQR)
+        if self.generated == True:
+            self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+        else:
+            pass
+        self.generated = False
+
+    def gen_qr(self):    
+        self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+        self.a += 1 
+        if self.a <= self.checkpoints:
+            self.remaining = self.checkpoints - 1
+            self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"QRcodeCheckpoint {self.a}"))
+            QRCodeWidget.size_hint=(.9, .6)
+            QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
+            self.WhichQR.text=f'Checkpoint #{self.a}'
+            self.generated = True
+            self.QR = QRCodeWidget()
+            
+        else:
+            self.root.current = "tracking"
+            self.WhichQR.text=''
+    def downloadQR(self):
+        if hasattr(self, 'QR'):
+            self.file_chooser_popup = FileChooserPopup(self.QR)
+            self.file_chooser_popup.open()
+            print('Exported the image')
+
+    def get_counter_data(self):
+        # Return the current counter data
+        return {'hours': self.hours, 'minutes': self.minutes, 'seconds': self.seconds}
+
+
     def request_android_permissions(self):
 
         from android.permissions import request_permissions, Permission
@@ -294,40 +428,111 @@ class OreonApp(MDApp):
             else:
                 print("callback. Some permissions refused.")
 
-        request_permissions([#Permission.ACCESS_COARSE_LOCATION,
-                            Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA,Permission.RECORD_AUDIO], callback)
+        request_permissions([Permission.INTERNET, Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA], callback)
     
     dialog = None
 
     def show_alert_dialog(self):
-        if not self.dialog:
-            self.dialog = MDDialog(
-                text="Are you sure you want to stop the run? (You can't resume it later')",
-                buttons=[
-                    MDFlatButton(
-                        text="CONTINUE",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_press=self.cancelcall,
+        if self.root.current == "run" and self.started == True:
+            #Debug in case dialog switch fails
+            #print(self.started)
+            #print(self.root.current)
+            if not self.dialog:
+                self.dialog = MDDialog(
+                    text="Are you sure you want to stop the run? (You can't resume it later')",
+                    buttons=[
+                        MDFlatButton(
+                            text="CONTINUE",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_press=self.cancelcall,
 
-                    ),
-                    MDFlatButton(
-                        text="STOP",
-                        theme_text_color="Custom",
-                        text_color=self.theme_cls.primary_color,
-                        on_press=self.discardcall,
-                    ),
-                ],
-            )
-        self.dialog.open()
+                        ),
+                        MDFlatButton(
+                            text="STOP",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_press=self.discardcall,
+                        ),
+                    ],
+                )
+            self.dialog.open()
+
+        else:
+            #Debug in case dialog switch fails
+            #print(self.started)
+            #print(self.root.current)
+            if not self.dialog:
+                self.dialog = MDDialog(
+                    text="Are you sure you want to go back?",
+                    buttons=[
+                        MDFlatButton(
+                            text="Stay here",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_press=self.cancelcall,
+
+                        ),
+                        MDFlatButton(
+                            text="Go back",
+                            theme_text_color="Custom",
+                            text_color=self.theme_cls.primary_color,
+                            on_press=self.discardcall,
+                        ),
+                    ],
+                )
+            self.dialog.open()
+
+            
     def cancelcall(self, instance):
         self.dialog.dismiss()
-
+        self.dialog = None
     def discardcall(self, instance):
-        self.root.current = "welcome"
-        self.dialog.dismiss()
+        if self.root.current != "run":
+            self.root.current = "welcome"
+            self.seconds = 0
+            self.minutes = 0
+            self.hours = 0
+            self.stopwatch.text = '00:00:00'
+            self.dialog.dismiss()
+            try:
+                self.root.get_screen('preview').remove_widget(self.stopwatch)
+                self.root.get_screen('run').remove_widget(self.stopwatch)
+            except:
+                print("No stopwatches existed")
+        elif self.started == True:
+            self.root.current = "preview"
+            try:
+                gps.stop()
+            except NotImplementedError:
+                print("Problem with GPS, not implemented on your platform.")
+            self.dialog.dismiss()
+            self.started = False
+            self.dialog = None
+            self.stop_counter()
+            try:
+                self.mapviewRun.remove_marker(self.point)
+            except:
+                print("Something went wrong with removing the pins")
+
+
+        else: 
+            self.root.current = "welcome"
+            self.dialog.dismiss()
+            self.dialog = None
+            self.seconds = 0
+            self.minutes = 0
+            self.hours = 0
+            self.stopwatch.text = '00:00:00'
+
+            try:
+                self.root.get_screen('preview').remove_widget(self.stopwatch)
+                self.root.get_screen('run').remove_widget(self.stopwatch)
+            except:
+                print("No stopwatches existed")
 
 if __name__ == '__main__':
     OreonApp().run()
 
 
+#This one hurt.
