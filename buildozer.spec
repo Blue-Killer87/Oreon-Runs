@@ -37,7 +37,7 @@ version = 0.4.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.10.12, Kivy==2.2.1, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy
+requirements = python3==3.10.12, Kivy==2.2.1, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy, qrcode, kivy_garden.qrcode, typing_extensions, pypng
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
