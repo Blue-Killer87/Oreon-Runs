@@ -208,6 +208,51 @@ class ScanQRScreen(Screen):
     @mainthread
     def got_result(self,result):
         self.ids.ti.text=str(result)
+        self.qrdata = result
+        self.proc_track_string()
+
+    def proc_track_string(self):
+        #The function that will process the string of a track into individual data pieces that are:
+        #0 - Number of checkpoints (will count by this number to make sure it's real)
+        #1 - Checkpoint n lat
+        #2 - Checkpoint n lon (n times criss cross)
+        #3 - Starting point lat
+        #4 - Starting point lon
+        #5 - Ending point lat
+        #6 - Ending point lon
+        #7 - Name of the track
+        #8 - Track description
+
+        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-This@is@a@testing@track@for@loading@a@string
+
+        RawString = self.qrdata
+        ArrString = []
+  
+        RawString=RawString.replace("-", " ").split()
+        ArrString = RawString
+        n = 0
+        pointn = 0
+        Checkpoints = int(ArrString[0])
+
+        for i in range(Checkpoints):
+            PinLat = ArrString[n+1]
+            PinLon = ArrString[n+2]
+            pointn += 1
+            print(f"Point number {pointn} lattitude is {PinLat} and longitude is {PinLon}")
+            n += 2
+
+        StartLat = ArrString[Checkpoints*2+1]
+        Startlon = ArrString[Checkpoints*2+2]
+        print(f"Starting lat is {StartLat} and lon is {Startlon}")
+
+        EndLat = ArrString[Checkpoints*2+3]
+        Endlon = ArrString[Checkpoints*2+4]
+        print(f"Ending lat is {EndLat} and lon is {Endlon}")
+
+        Name = ArrString[Checkpoints*2+5].replace("@", " ")
+        Description = ArrString[Checkpoints*2+6].replace("@", " ")
+        print(f"Name: {Name}")
+        print(f"Description: {Description}")
 
     def on_leave(self, *args):
         self.ids.preview.disconnect_camera()
@@ -280,7 +325,7 @@ class OreonApp(MDApp):
         #Main GPS method, calls itself every time the app gets new GPS telemtry
         def on_location(self, **kwargs):
             print("Got location")
-            if (kwargs['accuracy'] < 90 or kwargs['accuracy'] > 100):
+            if (kwargs['accuracy'] < 70 or kwargs['accuracy'] > 100):
                 print(kwargs)
                 print('Location is bad')
                 #self.aproxgpslat = kwargs["lat"]
@@ -334,6 +379,7 @@ class OreonApp(MDApp):
         except:
             print("Stopwatch error: Already existing")
 
+ 
 
 
     def update(self, *args):
@@ -535,4 +581,3 @@ if __name__ == '__main__':
     OreonApp().run()
 
 
-#This one hurt.
