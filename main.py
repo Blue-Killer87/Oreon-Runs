@@ -664,5 +664,3 @@ class OreonApp(MDApp):
 
 if __name__ == '__main__':
     OreonApp().run()
-
-
