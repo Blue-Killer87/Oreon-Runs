@@ -33,6 +33,7 @@ from kivymd.uix.label import MDLabel
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
 
+
 class LineDrawLayer(MapLayer):
     def __init__(self, coordinates=[[0, 0], [0, 0]], color=[0, 0, 1, 1], **kwargs):
         super().__init__(**kwargs)
@@ -109,6 +110,10 @@ class LineDrawLayer(MapLayer):
             self.invalidate_line_points()
             self.clear_and_redraw()
 
+    def clear_canvas(self):
+        with self.canvas:
+            self.canvas.clear()
+
     def clear_and_redraw(self, *args):
         with self.canvas:
             # Clear old line
@@ -154,7 +159,7 @@ class LineDrawLayer(MapLayer):
             Translate(*self.line_points_offset)
 
             Color(*self.color)
-            Line(points=self.line_points, width=2)
+            Line(points=self.line_points, width=4)
 
             # Retrieve the last saved coordinate space context
             PopMatrix()
@@ -174,7 +179,21 @@ class RunResultScreen(Screen):
     pass
 
 class TrackingScreen(Screen):
-    pass
+    
+    def on_enter(self, *args):
+        OreonApp.PointNumber = 0
+        OreonApp.GPSstart(OreonApp)
+        OreonApp.startPin(OreonApp)
+        
+
+    def on_leave(self, *args):
+        try:
+            gps.stop()
+        except NotImplementedError:
+            print("Problem with GPS, not implemented on your platform.")
+        OreonApp.endPin(self)
+        
+
 
 class CreateScreen(Screen):
     pass
@@ -208,6 +227,51 @@ class ScanQRScreen(Screen):
     @mainthread
     def got_result(self,result):
         self.ids.ti.text=str(result)
+        self.qrdata = result
+        self.proc_track_string()
+
+    def proc_track_string(self):
+        #The function that will process the string of a track into individual data pieces that are:
+        #0 - Number of checkpoints (will count by this number to make sure it's real)
+        #1 - Checkpoint n lat
+        #2 - Checkpoint n lon (n times criss cross)
+        #3 - Starting point lat
+        #4 - Starting point lon
+        #5 - Ending point lat
+        #6 - Ending point lon
+        #7 - Name of the track
+        #8 - Track description
+
+        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-This@is@a@testing@track@for@loading@a@string
+
+        RawString = self.qrdata
+        ArrString = []
+  
+        RawString=RawString.replace("-", " ").split()
+        ArrString = RawString
+        n = 0
+        pointn = 0
+        Checkpoints = int(ArrString[0])
+
+        for i in range(Checkpoints):
+            PinLat = ArrString[n+1]
+            PinLon = ArrString[n+2]
+            pointn += 1
+            print(f"Point number {pointn} lattitude is {PinLat} and longitude is {PinLon}")
+            n += 2
+
+        StartLat = ArrString[Checkpoints*2+1]
+        Startlon = ArrString[Checkpoints*2+2]
+        print(f"Starting lat is {StartLat} and lon is {Startlon}")
+
+        EndLat = ArrString[Checkpoints*2+3]
+        Endlon = ArrString[Checkpoints*2+4]
+        print(f"Ending lat is {EndLat} and lon is {Endlon}")
+
+        Name = ArrString[Checkpoints*2+5].replace("@", " ")
+        Description = ArrString[Checkpoints*2+6].replace("@", " ")
+        print(f"Name: {Name}")
+        print(f"Description: {Description}")
 
     def on_leave(self, *args):
         self.ids.preview.disconnect_camera()
@@ -253,6 +317,7 @@ class OreonApp(MDApp):
             self.theme_cls.theme_style = "Dark" #Background
             self.theme_cls.primary_palette = "Blue" #Main color
             self.mapviewRun = self.root.get_screen('run').ids.mapview
+            self.mapviewTrack = self.root.get_screen('tracking').ids.mapview
             self.started = False
 
             self.seconds = 0
@@ -264,6 +329,10 @@ class OreonApp(MDApp):
             self.generated = False
             self.QR = None
             self.file_chooser_popup = None
+            self.first = True
+            self.last = False
+            self.gpslat = 0
+            self.gpslon = 0
             
             if platform == 'android':
                 self.request_android_permissions()
@@ -275,12 +344,12 @@ class OreonApp(MDApp):
             print("gps.py: Android detected. Requesting permissions")
             self.oldlat = 0
             self.oldlon = 0
-            
 
         #Main GPS method, calls itself every time the app gets new GPS telemtry
+        @mainthread
         def on_location(self, **kwargs):
             print("Got location")
-            if (kwargs['accuracy'] < 90 or kwargs['accuracy'] > 100):
+            if (kwargs['accuracy'] < 30 or kwargs['accuracy'] > 99):
                 print(kwargs)
                 print('Location is bad')
                 #self.aproxgpslat = kwargs["lat"]
@@ -293,10 +362,15 @@ class OreonApp(MDApp):
                 self.gpslon = kwargs["lon"]
                 Clock.schedule_once(self.proc_location, 0)
 
+
         def proc_location(self, dt):        
-            self.point = MapMarker(lat = self.gpslat, lon = self.gpslon)
+            self.point = MapMarker(lat = self.gpslat, lon = self.gpslon, source= "data/Blank.png")
+            #
             #mapview.remove_marker(self.point)
-            self.mapviewRun.add_marker(self.point)
+            if self.root.current == 'run':
+                self.mapviewRun.add_marker(self.point)
+            else:
+                self.mapviewTrack.add_marker(self.point)
                 
             # You can import JSON data here or:
             my_coordinates = [[51.505807, -0.128513], [51.126251, 1.327067],
@@ -310,7 +384,11 @@ class OreonApp(MDApp):
                 # Blue route (two points)
                 my_coordinates = [[self.oldlat, self.oldlon], [self.gpslat, self.gpslon]]
                 lml3 = LineDrawLayer(coordinates=my_coordinates, color=[0, 0, 1, 1])
-                self.mapviewRun.add_layer(lml3, mode="scatter")
+                if self.root.current == 'run':
+                    self.mapviewRun.add_layer(lml3, mode="scatter")
+                else:
+                    self.mapviewTrack.add_layer(lml3, mode="scatter")
+
 
             else:    
                 print("still initializing")
@@ -322,17 +400,21 @@ class OreonApp(MDApp):
         print("Desktop version starting.")
 
     def start(self):
-        
+           
+   
         print("Run starting...")
-        if platform == 'android':
-            print('Inicialising GPS and stuff')
-            gps.start(minTime= 1000, minDistance=5)
+
         self.started = True
         try:
             self.root.get_screen('run').add_widget(self.stopwatch)
             Clock.schedule_interval(self.update, 1)
         except:
             print("Stopwatch error: Already existing")
+
+    def GPSstart(self):
+        if platform == 'android':
+            print('Inicialising GPS and stuff')
+            gps.start(minTime= 100, minDistance=10)
 
 
 
@@ -531,8 +613,56 @@ class OreonApp(MDApp):
             except:
                 print("No stopwatches existed")
 
+    def placePin(self):
+        if platform == 'android':
+            while self.gpslat == 0:
+                print('Waiting for first location.')
+            try:
+                self.a = self.gpslat
+                while self.a != self.oldlat:
+                    print("Waiting for location update...")
+                self.PinLat = self.gpslat
+                self.PinLon = self.gpslon
+                self.Pin = MapMarker(lat=self.PinLat, lon=self.PinLon, source= "data/pin.png")
+                self.mapviewTrack.add_marker(self.Pin)
+            except:
+                print('Problem with getting location.')
+        else:
+            print('unsupported platform for GPS')
+        print(f"Last? {self.last}")
+        print(f"First? {self.first}")
+
+    def startPin(self):
+        if platform == 'android':
+            self.a = self.gpslat
+            while self.a != self.oldlat:
+                print("Waiting for location update...")
+            self.SPinLat = self.gpslat
+            self.SPinLat = self.gpslon
+            self.SPin = MapMarker(lat=self.SPinLat, lon=self.SPinLon, source= "data/startpin.png")
+            self.WhichMap.add_marker(self.SPin)
+        else:
+            print('unsupported platform for GPS')
+
+    def endPin(self):
+        if platform == 'android':
+            self.a = self.gpslat
+            while self.a != self.oldlat:
+                print("Waiting for location update...")
+            self.EPinLat = self.gpslat
+            self.EPinLon = self.gpslon
+            self.EPin = MapMarker(lat=self.EPinLat, lon=self.EPinLon, source= "data/endpin.png")
+            self.WhichMap.add_marker(self.EPin)
+        else:
+            print('unsupported platform for GPS')
+
+    def ASSET(self): #Advanced Sequential String Encryption Technology
+        self.String =  f"{self.checkpoints}-"
+    
+
+
+
 if __name__ == '__main__':
     OreonApp().run()
 
 
-#This one hurt.
