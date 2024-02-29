@@ -29,7 +29,7 @@ source.include_exts = py,png,jpg,kv,atlas,xml
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.4.0
+version = 0.5.3
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -37,7 +37,7 @@ version = 0.4.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.10.12, Kivy==2.2.1, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy, qrcode, kivy_garden.qrcode, typing_extensions, pypng
+requirements = python3, kivy, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy, qrcode, kivy_garden.qrcode, typing_extensions, pypng
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
@@ -98,16 +98,16 @@ android.permissions = INTERNET, ACCESS_FINE_LOCATION, WRITE_EXTERNAL_STORAGE, CA
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-android.api = 32
+android.api = 33
 
 # (int) Minimum API your APK will support.
 #android.minapi = 21
 
 # (int) Android SDK version to use
-android.sdk = 20
+#android.sdk = 20
 
 # (str) Android NDK version to use
-android.ndk = 25b
+#android.ndk = 25b
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 #android.ndk_api = 21
@@ -292,7 +292,7 @@ android.allow_backup = True
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-#p4a.branch = develop
+p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD
