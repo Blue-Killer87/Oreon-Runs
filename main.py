@@ -1,6 +1,7 @@
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.app import MDApp
+from kivy.app import App
 from kivy.clock import mainthread, Clock
 from kivy.utils import platform
 from plyer import gps
@@ -28,6 +29,7 @@ import os
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.label import MDLabel
+import time
 
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
@@ -169,7 +171,7 @@ class LineDrawLayer(MapLayer):
 class WelcomeScreen(Screen):
     pass
 
-class ChooseScreen(Screen):
+class ChooseTrackScreen(Screen):
     pass
 
 class RunScreen(Screen):
@@ -181,17 +183,18 @@ class RunResultScreen(Screen):
 class TrackingScreen(Screen):
     
     def on_enter(self, *args):
-        OreonApp.PointNumber = 0
-        OreonApp.GPSstart(OreonApp)
-        OreonApp.startPin(OreonApp)
-        
+        app_instance = App.get_running_app()
+        app_instance.GPSstart()
+        app_instance.waitingforgps = True
+        self.TrackPointCounter = 0
 
     def on_leave(self, *args):
+        app_instance = App.get_running_app()
         try:
             gps.stop()
         except NotImplementedError:
             print("Problem with GPS, not implemented on your platform.")
-        OreonApp.endPin(self)
+        app_instance.last = True
         
 
 
@@ -267,21 +270,24 @@ class ScanQRScreen(Screen):
         EndLat = ArrString[Checkpoints*2+3]
         Endlon = ArrString[Checkpoints*2+4]
         print(f"Ending lat is {EndLat} and lon is {Endlon}")
-
-        Name = ArrString[Checkpoints*2+5].replace("@", " ")
-        Description = ArrString[Checkpoints*2+6].replace("@", " ")
-        print(f"Name: {Name}")
-        print(f"Description: {Description}")
-
+        try:
+            Name = ArrString[Checkpoints*2+5].replace("@", " ")
+            Description = ArrString[Checkpoints*2+6].replace("@", " ")
+            print(f"Name: {Name}")
+            print(f"Description: {Description}")
+        except:
+            print('Invalid name or description')
     def on_leave(self, *args):
         self.ids.preview.disconnect_camera()
 
-class ChooseTrackScreen(Screen):
+class GetTrackQR(Screen):
     pass
 class Main(ScreenManager):
     pass
 
 class FileChooserPopup(Popup):
+################################################################################################################
+#The save file function:
     file_chooser = ObjectProperty(None)
 
     def __init__(self, qr_widget, **kwargs):
@@ -312,6 +318,9 @@ class FileChooserPopup(Popup):
         self.dismiss()
 
 class OreonApp(MDApp):
+
+################################################################################################################
+#Settings to setup at start:
     
     def build(self):
             self.theme_cls.theme_style = "Dark" #Background
@@ -333,13 +342,21 @@ class OreonApp(MDApp):
             self.last = False
             self.gpslat = 0
             self.gpslon = 0
-            
+            self.waitingforgps = False
+            self.TrackPins = []
+            self.TrackPointCounter = 0
+
             if platform == 'android':
                 self.request_android_permissions()
-    
+
+
+################################################################################################################
+#GPS configurations and start:
+                
     if platform == "android":
         def on_start(self):
             gps.configure(on_location=self.on_location)
+            
             #gps.start(minTime=5000, minDistance=1)
             print("gps.py: Android detected. Requesting permissions")
             self.oldlat = 0
@@ -349,7 +366,7 @@ class OreonApp(MDApp):
         @mainthread
         def on_location(self, **kwargs):
             print("Got location")
-            if (kwargs['accuracy'] < 30 or kwargs['accuracy'] > 99):
+            if (kwargs['accuracy'] < 10 or kwargs['accuracy'] > 99):
                 print(kwargs)
                 print('Location is bad')
                 #self.aproxgpslat = kwargs["lat"]
@@ -360,8 +377,15 @@ class OreonApp(MDApp):
                 print('Location is fine')
                 self.gpslat = kwargs["lat"]
                 self.gpslon = kwargs["lon"]
-                Clock.schedule_once(self.proc_location, 0)
+                if self.waitingforgps == True:
+                    self.startPin()
+                    self.waitingforgps == False
+                    print("fetched starting location")
 
+                if self.last == True:
+                    self.endPin()
+                    print("Initated ending sequence")
+                Clock.schedule_once(self.proc_location, 0)
 
         def proc_location(self, dt):        
             self.point = MapMarker(lat = self.gpslat, lon = self.gpslon, source= "data/Blank.png")
@@ -401,7 +425,7 @@ class OreonApp(MDApp):
 
     def start(self):
            
-   
+        self.GPSstart()
         print("Run starting...")
 
         self.started = True
@@ -414,9 +438,13 @@ class OreonApp(MDApp):
     def GPSstart(self):
         if platform == 'android':
             print('Inicialising GPS and stuff')
-            gps.start(minTime= 100, minDistance=10)
+            gps.start(minTime= 500, minDistance=5)
+        else:
+            print("unsupported platform for GPS")
 
 
+################################################################################################################
+#Stopwatch functions:
 
     def update(self, *args):
         self.seconds += 1
@@ -433,13 +461,9 @@ class OreonApp(MDApp):
         self.stopwatch.text = f'{self.format_digit(self.hours)}:{self.format_digit(self.minutes)}:{self.format_digit(self.seconds)}'
 
 
-
     def format_digit(self, value):
         # Helper function to add leading zero if value is less than 10
         return f'{value:02}'
-
-
-
 
     def toggle_counter(self, on):
         # Turn on/off the counter label by adjusting its opacity
@@ -457,48 +481,70 @@ class OreonApp(MDApp):
         
         Clock.unschedule(self.update)
 
-    def submit_create(self):
-        self.root.current = "createqr"
-        self.a = 0
-        self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
-        self.infoLabel = MDLabel(text='You can create and download your QR codes here, one by one.', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
-        self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
-        self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
-        self.WhichQR = Label(text='', font_size=dp(25), halign='center', valign='middle', color=(1,1,1,1), markup='True')
-        self.WhichQR.pos_hint = {'center_x': 0.5, 'center_y': 0.95}
-        self.root.get_screen('createqr').ids.floatqr.add_widget(self.WhichQR)
-        if self.generated == True:
-            self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
-        else:
-            pass
-        self.generated = False
+    def get_counter_data(self):
+        # Return the current counter data
+        return {'hours': self.hours, 'minutes': self.minutes, 'seconds': self.seconds}
+    
 
-    def gen_qr(self):    
-        self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
-        self.a += 1 
-        if self.a <= self.checkpoints:
-            self.remaining = self.checkpoints - 1
-            self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"QRcodeCheckpoint {self.a}"))
+################################################################################################################
+#QR generation functions:
+    
+    def submit_create(self):
+        try:
+            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0:
+            
+                self.root.current = "createqr"
+                self.a = 0
+                self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
+                self.infoLabel = MDLabel(text='You can create and download your QR codes here, one by one.', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
+                self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
+                self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
+                self.WhichQR = Label(text='', font_size=dp(25), halign='center', valign='middle', color=(1,1,1,1), markup='True')
+                self.WhichQR.pos_hint = {'center_x': 0.5, 'center_y': 0.95}
+                self.root.get_screen('createqr').ids.floatqr.add_widget(self.WhichQR)
+                if self.generated == True:
+                    self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+                else:
+                    pass
+                self.generated = False
+        except:
+            print("Invalid value")
+
+
+
+
+    def gen_qr(self):  
+        if self.root.current == 'createqr':
+            self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
+            self.a += 1 
+            if self.a <= self.checkpoints:
+                self.remaining = self.checkpoints - 1
+                self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"QRcodeCheckpoint {self.a}"))
+                QRCodeWidget.size_hint=(.9, .6)
+                QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
+                self.WhichQR.text=f'Checkpoint #{self.a}'
+                self.generated = True
+                self.QR = QRCodeWidget()
+                
+            else:
+                self.root.current = "tracking"
+                self.WhichQR.text=''
+        else:
+            self.root.get_screen('trackqr').ids.floatqr.add_widget(QRCodeWidget(data=self.String))
             QRCodeWidget.size_hint=(.9, .6)
             QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
-            self.WhichQR.text=f'Checkpoint #{self.a}'
-            self.generated = True
             self.QR = QRCodeWidget()
-            
-        else:
-            self.root.current = "tracking"
-            self.WhichQR.text=''
+
     def downloadQR(self):
         if hasattr(self, 'QR'):
             self.file_chooser_popup = FileChooserPopup(self.QR)
             self.file_chooser_popup.open()
             print('Exported the image')
 
-    def get_counter_data(self):
-        # Return the current counter data
-        return {'hours': self.hours, 'minutes': self.minutes, 'seconds': self.seconds}
 
-
+################################################################################################################
+#Permissions:
+    
     def request_android_permissions(self):
 
         from android.permissions import request_permissions, Permission
@@ -512,6 +558,9 @@ class OreonApp(MDApp):
 
         request_permissions([Permission.INTERNET, Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA], callback)
     
+
+################################################################################################################
+#The exit dialog function:
     dialog = None
 
     def show_alert_dialog(self):
@@ -613,53 +662,93 @@ class OreonApp(MDApp):
             except:
                 print("No stopwatches existed")
 
+################################################################################################################
+#Track create pin functions:
     def placePin(self):
         if platform == 'android':
-            while self.gpslat == 0:
-                print('Waiting for first location.')
             try:
-                self.a = self.gpslat
-                while self.a != self.oldlat:
-                    print("Waiting for location update...")
-                self.PinLat = self.gpslat
-                self.PinLon = self.gpslon
-                self.Pin = MapMarker(lat=self.PinLat, lon=self.PinLon, source= "data/pin.png")
-                self.mapviewTrack.add_marker(self.Pin)
-            except:
-                print('Problem with getting location.')
+                if self.gpslat == 0:
+                    print('Waiting for first location to place a pin.')
+
+                else:
+                    if self.TrackPointCounter < self.checkpoints:
+                        try:
+                            self.a = self.gpslat
+                            while self.a != self.oldlat:
+                                print("Waiting for location update...")
+                            self.PinLat = self.gpslat
+                            self.PinLon = self.gpslon
+                            self.Pin = MapMarker(lat=self.PinLat, lon=self.PinLon, source= "data/pin.png")
+                            self.mapviewTrack.add_marker(self.Pin)
+                            print("Pin placed")
+                            self.TrackPins.append(self.PinLat)
+                            self.TrackPins.append(self.PinLon)
+                            self.TrackPointCounter += 1
+                            print(f"Added pin to list: {self.TrackPins}, Number of total points place is now: {self.TrackPointCounter}")
+
+                    
+                        except:
+                            print('Problem with getting location while placing pin.')
+                    else:
+                        print("Can't add another pin")
+            
+            except: 
+                print("uknown error while placing pin")
         else:
             print('unsupported platform for GPS')
-        print(f"Last? {self.last}")
-        print(f"First? {self.first}")
-
-    def startPin(self):
+        #print(f"Last? {self.last}")
+        #print(f"First? {self.first}")
+        #self.mapview.center_on(kwargs['lat'], kwargs['lon'])
+            
+    def startPin(self, dt=None):
         if platform == 'android':
-            self.a = self.gpslat
-            while self.a != self.oldlat:
-                print("Waiting for location update...")
-            self.SPinLat = self.gpslat
-            self.SPinLat = self.gpslon
-            self.SPin = MapMarker(lat=self.SPinLat, lon=self.SPinLon, source= "data/startpin.png")
-            self.WhichMap.add_marker(self.SPin)
+            try:
+                if self.gpslat == 0:
+                    self.waitingforgps = True
+                else:      
+                    self.SPinLat = self.gpslat
+                    self.SPinLon = self.gpslon
+                    self.SPin = MapMarker(lat=self.SPinLat, lon=self.SPinLon, source= "data/startpin.png")
+                    self.mapviewTrack.add_marker(self.SPin)
+                    print("Starter Pin added")
+                    self.first = False
+                    self.mapviewTrack.center_on(self.gpslat, self.gpslon)
+                    self.waitingforgps = False
+            except:
+                print("Waiting for initial location to place starting pin.")
+                self.waitingforgps = True
+                
         else:
             print('unsupported platform for GPS')
 
     def endPin(self):
         if platform == 'android':
-            self.a = self.gpslat
-            while self.a != self.oldlat:
-                print("Waiting for location update...")
-            self.EPinLat = self.gpslat
-            self.EPinLon = self.gpslon
-            self.EPin = MapMarker(lat=self.EPinLat, lon=self.EPinLon, source= "data/endpin.png")
-            self.WhichMap.add_marker(self.EPin)
+            try:
+                self.EPinLat = self.gpslat
+                self.EPinLon = self.gpslon
+                self.EPin = MapMarker(lat=self.EPinLat, lon=self.EPinLon, source= "data/endpin.png")
+                self.mapviewTrack.add_marker(self.EPin)
+                print("End pin added")
+                
+
+                self.last = False
+            except:
+                print("Uknown error while placing end pin")
         else:
             print('unsupported platform for GPS')
 
+################################################################################################################
+            
     def ASSET(self): #Advanced Sequential String Encryption Technology
-        self.String =  f"{self.checkpoints}-"
-    
+        self.endPin()
+        print(f"EpinLat: {self.EPinLat}")
+        print(f"EpinLon: {self.EPinLon}")
+        self.PinString = "-".join(str(element) for element in self.TrackPins)
 
+        self.String =  f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}-sgdgdg-{self.checkpoints}"
+
+        self.root.current = "trackqr"
+        print(self.String)
 
 
 if __name__ == '__main__':
