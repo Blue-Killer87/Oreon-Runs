@@ -4,7 +4,6 @@
 
 ScreenManager:
     WelcomeScreen:
-    ChooseScreen:
     RunResultScreen:
     RunScreen:
     TrackingScreen:
@@ -12,6 +11,7 @@ ScreenManager:
     ScanQRScreen:
     CreateQRScreen:
     ChooseTrackScreen:
+    GetTrackQR:
 
 <Toolbar@BoxLayout>:
     size_hint_y: None
@@ -150,8 +150,8 @@ ScreenManager:
             id: mapview
             lat: 49.5
             lon: 14.8
-            zoom: 6
-            map_source: "osm"
+            zoom: 15
+            map_source: MapSource(max_zoom=20, min_zoom=10)
             #size_hint: .5, .5
             #pos_hint: {"x": .25, "y": .25}
 
@@ -186,8 +186,8 @@ ScreenManager:
             id: mapview
             lat: 49.5
             lon: 14.8
-            zoom: 6
-            map_source: "osm"
+            zoom: 15
+            map_source: MapSource(max_zoom=20, min_zoom=10)
             #size_hint: .5, .5
             #pos_hint: {"x": .25, "y": .25}
 
@@ -302,8 +302,8 @@ ScreenManager:
         id: mapview
         lat: 49.5
         lon: 14.8
-        zoom: 6
-        map_source: "osm"
+        zoom: 15
+        map_source: MapSource(max_zoom=20, min_zoom=10)
 
     Toolbar:
         id: toolbar
@@ -322,7 +322,7 @@ ScreenManager:
 
             MDIconButton:
                 id: center_button
-                on_release: app.ETS()
+                on_release: app.ASSET()
                 halign: 'center'
                 font_size: sp(20)
                 icon:"check-circle"
@@ -345,6 +345,25 @@ ScreenManager:
         id: floatqr
 
 
+
+        MDFillRoundFlatIconButton:
+            text: 'Generate QR code'
+            icon: 'qrcode-edit'
+            pos_hint: {"center_x": .5, "center_y": .21}
+            font_size: sp(30)
+            on_release: app.gen_qr()
+
+        MDFillRoundFlatIconButton:
+            text: 'Download QR code'
+            icon: 'download'
+            pos_hint: {"center_x": .5, "center_y": .06}
+            font_size: sp(30)
+            on_release: app.downloadQR()
+
+<GetTrackQR>
+    name: 'trackqr'
+    FloatLayout:
+        id: floatqr
 
         MDFillRoundFlatIconButton:
             text: 'Generate QR code'
