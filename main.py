@@ -1,368 +1,24 @@
-from kivy.lang import Builder
-from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.app import MDApp
-from kivy.app import App
 from kivy.clock import mainthread, Clock
 from kivy.utils import platform
 from plyer import gps
-from kivy.properties import StringProperty, ObjectProperty
-from kivy_garden.mapview import MapMarker, MapView, MapMarkerPopup, MapLayer
-from kivy.core.window import Window
+from kivy_garden.mapview import MapMarker
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
-from kivy.graphics import Line, Color, InstructionGroup
 from kivy.clock import Clock
-from kivy.graphics.context_instructions import Translate, Scale, PushMatrix, PopMatrix
-from kivy_garden.mapview.utils import clamp
-from kivy_garden.mapview.constants import \
-    (MIN_LONGITUDE, MAX_LONGITUDE, MIN_LATITUDE, MAX_LATITUDE)
-from math import radians, log, tan, cos, pi
-from camera4kivy import Preview
-from PIL import Image
-from pyzbar.pyzbar import decode
 from kivy.uix.label import Label
 from kivy.metrics import dp, sp
 from kivy_garden.qrcode import QRCodeWidget
-from kivy.uix.filechooser import FileChooserIconView
-from kivy.uix.popup import Popup
-import os
-from kivy.uix.button import Button
-from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.label import MDLabel
-import time
+from LineDrawLayer import LineDrawLayer
+from plyer import filechooser
+from screens import *
+
 
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
 
-
-class LineDrawLayer(MapLayer):
-    def __init__(self, coordinates=[[0, 0], [0, 0]], color=[0, 0, 1, 1], **kwargs):
-        super().__init__(**kwargs)
-        self._coordinates = coordinates
-        self.color = color
-        self._line_points = None
-        self._line_points_offset = (0, 0)
-        self.zoom = 0
-        self.lon = 0
-        self.lat = 0
-        self.ms = 0
-
-    @property
-    def coordinates(self):
-        return self._coordinates
-
-    @coordinates.setter
-    def coordinates(self, coordinates):
-        self._coordinates = coordinates
-        self.invalidate_line_points()
-        self.clear_and_redraw()
-
-    @property
-    def line_points(self):
-        if self._line_points is None:
-            self.calc_line_points()
-        return self._line_points
-
-    @property
-    def line_points_offset(self):
-        if self._line_points is None:
-            self.calc_line_points()
-        return self._line_points_offset
-
-    def calc_line_points(self):
-        # Offset all points by the coordinates of the first point,
-        # to keep coordinates closer to zero.
-        # (and therefore avoid some float precision issues when drawing lines)
-        self._line_points_offset = (self.get_x(self.coordinates[0][1]),
-                                    self.get_y(self.coordinates[0][0]))
-        # Since lat is not a linear transform we must compute manually
-        self._line_points = [(self.get_x(lon) - self._line_points_offset[0],
-                              self.get_y(lat) - self._line_points_offset[1])
-                             for lat, lon in self.coordinates]
-
-    def invalidate_line_points(self):
-        self._line_points = None
-        self._line_points_offset = (0, 0)
-
-    def get_x(self, lon):
-        """Get the x position on the map using this map source's projection
-        (0, 0) is located at the top left.
-        """
-        return clamp(lon, MIN_LONGITUDE, MAX_LONGITUDE) * self.ms / 360.0
-
-    def get_y(self, lat):
-        """Get the y position on the map using this map source's projection
-        (0, 0) is located at the top left.
-        """
-        lat = radians(clamp(-lat, MIN_LATITUDE, MAX_LATITUDE))
-        return (1.0 - log(tan(lat) + 1.0 / cos(lat)) / pi) * self.ms / 2.0
-
-    # Function called when the MapView is moved
-    def reposition(self):
-        map_view = self.parent
-
-        # Must redraw when the zoom changes
-        # as the scatter transform resets for the new tiles
-        if self.zoom != map_view.zoom or \
-                   self.lon != round(map_view.lon, 7) or \
-                   self.lat != round(map_view.lat, 7):
-            map_source = map_view.map_source
-            self.ms = pow(2.0, map_view.zoom) * map_source.dp_tile_size
-            self.invalidate_line_points()
-            self.clear_and_redraw()
-
-    def clear_canvas(self):
-        with self.canvas:
-            self.canvas.clear()
-
-    def clear_and_redraw(self, *args):
-        with self.canvas:
-            # Clear old line
-            self.canvas.clear()
-
-        self._draw_line()
-
-    def _draw_line(self, *args):
-        map_view = self.parent
-        self.zoom = map_view.zoom
-        self.lon = map_view.lon
-        self.lat = map_view.lat
-
-        # When zooming we must undo the current scatter transform
-        # or the animation distorts it
-        scatter = map_view._scatter
-        sx, sy, ss = scatter.x, scatter.y, scatter.scale
-
-        # Account for map source tile size and map view zoom
-        vx, vy, vs = map_view.viewport_pos[0], map_view.viewport_pos[1], map_view.scale
-
-        with self.canvas:
-
-            # Save the current coordinate space context
-            PushMatrix()
-
-            # Offset by the MapView's position in the window (always 0,0 ?)
-            Translate(*map_view.pos)
-
-            # Undo the scatter animation transform
-            Scale(1 / ss, 1 / ss, 1)
-            Translate(-sx, -sy)
-
-            # Apply the get window xy from transforms
-            Scale(vs, vs, 1)
-            Translate(-vx, -vy)
-
-            # Apply what we can factor out of the mapsource long, lat to x, y conversion
-            Translate(self.ms / 2, 0)
-
-            # Translate by the offset of the line points
-            # (this keeps the points closer to the origin)
-            Translate(*self.line_points_offset)
-
-            Color(*self.color)
-            Line(points=self.line_points, width=4)
-
-            # Retrieve the last saved coordinate space context
-            PopMatrix()
-
-
-
-class WelcomeScreen(Screen):
-    pass
-
-class ChooseTrackScreen(Screen):
-    pass
-
-class RunScreen(Screen):
-    pass
-
-class RunResultScreen(Screen):
-    pass
-
-class TrackingScreen(Screen):
-    
-    def on_enter(self, *args):
-        app_instance = App.get_running_app()
-        app_instance.GPSstart()
-        app_instance.waitingforgps = True
-        self.TrackPointCounter = 0
-
-    def on_leave(self, *args):
-        app_instance = App.get_running_app()
-        try:
-            gps.stop()
-        except NotImplementedError:
-            print("Problem with GPS, not implemented on your platform.")
-        app_instance.last = True
-        
-
-
-class CreateScreen(Screen):
-    pass
-
-class CreateQRScreen(Screen):
-    pass
-
-class ScanAnalyze(Preview):
-	extracted_data=ObjectProperty(None)
-
-
-	def analyze_pixels_callback(self, pixels, image_size, image_pos, scale, mirror):
-		pimage=Image.frombytes(mode='RGBA',size=image_size,data=pixels)
-		list_of_all_barcodes=decode(pimage)
-		
-
-		if list_of_all_barcodes:
-			first_barcode_data = list_of_all_barcodes[0].data.decode('utf-8')
-			if self.extracted_data:
-				self.extracted_data(first_barcode_data)
-			else:
-				print("Not found")
-
-
-class ScanQRScreen(Screen):
-
-
-    def on_enter(self, *args):
-         self.ids.preview.connect_camera(enable_analyze_pixels = True,default_zoom=0.0)
-
-    @mainthread
-    def got_result(self,result):
-        self.ids.ti.text=str(result)
-        self.qrdata = result
-        try:
-            self.proc_track_string()
-            try:
-                self.load_map()
-            except:
-                print('Unable to load map')
-        except:
-            print('Invalid QR code')
-
-
-    def proc_track_string(self):
-        #The function that will process the string of a track into individual data pieces that are:
-        #0 - Number of checkpoints (will count by this number to make sure it's real)
-        #1 - Checkpoint n lat
-        #2 - Checkpoint n lon (n times criss cross)
-        #3 - Starting point lat
-        #4 - Starting point lon
-        #5 - Ending point lat
-        #6 - Ending point lon
-        #7 - Name of the track
-        #8 - Track description
-
-        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-This@is@a@testing@track@for@loading@a@string
-
-        RawString = self.qrdata
-        ArrString = []
-  
-        RawString=RawString.replace("-", " ").split()
-        ArrString = RawString
-        n = 0
-        pointn = 0
-        Checkpoints = int(ArrString[0])
-        OreonApp.MapCheckpoints = Checkpoints
-
-        for i in range(Checkpoints):
-            PinLat = ArrString[n+1]
-            OreonApp.MapPinLat = PinLat
-            PinLon = ArrString[n+2]
-            OreonApp.MapPinLon = PinLon
-            pointn += 1
-            print(f"Point number {pointn} lattitude is {PinLat} and longitude is {PinLon}")
-            n += 2
-
-        StartLat = ArrString[Checkpoints*2+1]
-        self.StartLat = StartLat
-        Startlon = ArrString[Checkpoints*2+2]
-        self.StartLon = Startlon
-        print(f"Starting lat is {StartLat} and lon is {Startlon}")
-
-        EndLat = ArrString[Checkpoints*2+3]
-        self.EndLat = EndLat
-        Endlon = ArrString[Checkpoints*2+4]
-        self.EndLon = Endlon
-        print(f"Ending lat is {EndLat} and lon is {Endlon}")
-        
-        try:
-            Name = ArrString[Checkpoints*2+5].replace("@", " ")
-            OreonApp.MapName = Name
-            Description = ArrString[Checkpoints*2+6].replace("@", " ")
-            OreonApp.MapDescription = Description
-            print(f"Name: {Name}")
-            print(f"Description: {Description}")
-        except:
-            print('Invalid name or description')
-        return True
-    
-
-    def load_map(self):
-        OreonApp.root.current = 'run'
-        mapviewRun = OreonApp.root.get_screen('run').ids.mapview
-        RawString = self.qrdata
-        ArrString = []
-  
-        Spoint = MapMarker(lat = self.StartLat, lon = self.StartLon, source= "data/startpin.png")
-        mapviewRun.add_marker(Spoint)
-
-        Epoint = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/endpin.png")
-        mapviewRun.add_marker(Epoint)
-
-        RawString=RawString.replace("-", " ").split()
-        ArrString = RawString
-        n = 0
-        pointn = 0
-        Checkpoints = int(ArrString[0])
-        for i in range(Checkpoints):
-            PinLat = ArrString[n+1]
-            PinLon = ArrString[n+2]
-            pointn += 1
-            print(f"Point number {pointn} lattitude is {PinLat} and longitude is {PinLon}")
-            n += 2
-            point = MapMarker(lat = PinLat, lon = PinLon, source= "data/pin.png")
-            mapviewRun.add_marker(point)
-
-    def on_leave(self, *args):
-        self.ids.preview.disconnect_camera()
-
-class GetTrackQR(Screen):
-    pass
-class Main(ScreenManager):
-    pass
-
-class FileChooserPopup(Popup):
-################################################################################################################
-#The save file function:
-    file_chooser = ObjectProperty(None)
-
-    def __init__(self, qr_widget, **kwargs):
-        super(FileChooserPopup, self).__init__(**kwargs)
-        self.qr_widget = qr_widget
-        self.file_chooser = FileChooserIconView()
-        button_layout = BoxLayout(orientation='horizontal', size_hint_y=None, height=44)
-        submit_button = Button(text='Submit', size_hint_x=None, width=100, on_press=self.save_qr)
-        cancel_button = Button(text='Cancel', size_hint_x=None, width=100, on_press=self.dismiss_popup)
-        button_layout.add_widget(submit_button)
-        button_layout.add_widget(cancel_button)
-
-        main_layout = BoxLayout(orientation='vertical')
-        main_layout.add_widget(self.file_chooser)
-        main_layout.add_widget(button_layout)
-
-        self.content = main_layout
-
-    def save_qr(self, instance):
-        selected_path = self.file_chooser.path
-        image_path = os.path.join(selected_path)
-
-        self.qr_widget.export_as_image('OreonQRcode', image_path)
-        print(f"QR code saved as {image_path}")
-        self.dismiss_popup()
-
-    def dismiss_popup(self):
-        self.dismiss()
 
 class OreonApp(MDApp):
 
@@ -386,15 +42,20 @@ class OreonApp(MDApp):
             self.QR = None
             self.file_chooser_popup = None
             self.first = True
-            self.last = False
             self.gpslat = 0
             self.gpslon = 0
             self.waitingforgps = False
             self.TrackPins = []
             self.TrackPointCounter = 0
+            self.ExistingMarkers = []
+            self.CreateExistingMarkers = []
+            self.ExistingMarkersPreview = []
+            self.LineDraw = LineDrawLayer()
 
             if platform == 'android':
                 self.request_android_permissions()
+
+
 
 
 ################################################################################################################
@@ -408,6 +69,8 @@ class OreonApp(MDApp):
             print("gps.py: Android detected. Requesting permissions")
             self.oldlat = 0
             self.oldlon = 0
+            self.removelat = 0
+            self.removelon = 0
 
         #Main GPS method, calls itself every time the app gets new GPS telemtry
         @mainthread
@@ -428,20 +91,16 @@ class OreonApp(MDApp):
                     self.startPin()
                     self.waitingforgps == False
                     print("fetched starting location")
-
-                if self.last == True:
-                    self.endPin()
-                    print("Initated ending sequence")
                 Clock.schedule_once(self.proc_location, 0)
 
         def proc_location(self, dt):        
-            self.point = MapMarker(lat = self.gpslat, lon = self.gpslon, source= "data/Blank.png")
+            #self.point = MapMarker(lat = self.gpslat, lon = self.gpslon, source= "data/Blank.png")
             #
             #mapview.remove_marker(self.point)
-            if self.root.current == 'run':
-                self.mapviewRun.add_marker(self.point)
-            else:
-                self.mapviewTrack.add_marker(self.point)
+            #if self.root.current == 'run':
+                #self.mapviewRun.add_marker(self.point)
+            #else:
+               # self.mapviewTrack.add_marker(self.point)
                 
             # You can import JSON data here or:
             my_coordinates = [[51.505807, -0.128513], [51.126251, 1.327067],
@@ -485,7 +144,7 @@ class OreonApp(MDApp):
     def GPSstart(self):
         if platform == 'android':
             print('Inicialising GPS and stuff')
-            gps.start(minTime= 500, minDistance=5)
+            gps.start(minTime= 5000, minDistance=15)
         else:
             print("unsupported platform for GPS")
 
@@ -568,12 +227,12 @@ class OreonApp(MDApp):
             self.a += 1 
             if self.a <= self.checkpoints:
                 self.remaining = self.checkpoints - 1
-                self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"QRcodeCheckpoint {self.a}"))
+                self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"OreonQRcodeCheckpoint {self.a}"))
                 QRCodeWidget.size_hint=(.9, .6)
                 QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
                 self.WhichQR.text=f'Checkpoint #{self.a}'
                 self.generated = True
-                self.QR = QRCodeWidget()
+                self.QR = QRCodeWidget(data=f"QRcodeCheckpoint {self.a}")
                 
             else:
                 self.root.current = "tracking"
@@ -582,14 +241,30 @@ class OreonApp(MDApp):
             self.root.get_screen('trackqr').ids.floatqr.add_widget(QRCodeWidget(data=self.String))
             QRCodeWidget.size_hint=(.9, .6)
             QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
-            self.QR = QRCodeWidget()
+            self.QR = QRCodeWidget(data=self.String)
+
+
+
+    def file_chooser(self):
+        filechooser.choose_dir(on_selection=self.selected)
+
+    def selected(self, selection):
+        print(selection)
+        if selection:
+            self.qrpath = selection[0]
+            self.downloadQR()
 
     def downloadQR(self):
-        if hasattr(self, 'QR'):
-            self.file_chooser_popup = FileChooserPopup(self.QR)
-            self.file_chooser_popup.open()
-            print('Exported the image')
-
+        if self.root.current == 'createqr':
+            print(f'Exporting checkpoint QR code as {self.qrpath}/QRCheckpoint{self.a}.png')
+            self.QR.export_to_png(f'{self.qrpath}/QRCheckpoint{self.a}.png')
+            
+        else:
+            try:
+                self.QR.export_to_png(f'{self.qrpath}/QRTrack-{self.trackname}')
+                                      
+            except:
+                print('Something went wrong with exporting track QR')
 
 ################################################################################################################
 #Permissions:
@@ -605,7 +280,7 @@ class OreonApp(MDApp):
             else:
                 print("callback. Some permissions refused.")
 
-        request_permissions([Permission.INTERNET, Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE,Permission.CAMERA], callback)
+        request_permissions([Permission.INTERNET, Permission.ACCESS_FINE_LOCATION, Permission.WRITE_EXTERNAL_STORAGE, Permission.READ_EXTERNAL_STORAGE, Permission.CAMERA], callback)
     
 
 ################################################################################################################
@@ -637,6 +312,7 @@ class OreonApp(MDApp):
                     ],
                 )
             self.dialog.open()
+
 
         else:
             #Debug in case dialog switch fails
@@ -680,6 +356,7 @@ class OreonApp(MDApp):
                 self.root.get_screen('run').remove_widget(self.stopwatch)
             except:
                 print("No stopwatches existed")
+
         elif self.started == True:
             self.root.current = "preview"
             try:
@@ -691,10 +368,11 @@ class OreonApp(MDApp):
             self.dialog = None
             self.stop_counter()
             try:
-                self.mapviewRun.remove_marker(self.point)
+                for marker in self.ExistingMarkers:
+                    self.mapviewRun.remove_marker(marker)
+                self.ExistingMarkers = []
             except:
                 print("Something went wrong with removing the pins")
-
 
         else: 
             self.root.current = "welcome"
@@ -733,6 +411,7 @@ class OreonApp(MDApp):
                             self.TrackPins.append(self.PinLat)
                             self.TrackPins.append(self.PinLon)
                             self.TrackPointCounter += 1
+                            self.CreateExistingMarkers.append(self.Pin)
                             print(f"Added pin to list: {self.TrackPins}, Number of total points place is now: {self.TrackPointCounter}")
 
                     
@@ -763,6 +442,7 @@ class OreonApp(MDApp):
                     self.first = False
                     self.mapviewTrack.center_on(self.gpslat, self.gpslon)
                     self.waitingforgps = False
+                    self.CreateExistingMarkers.append(self.SPin)
             except:
                 print("Waiting for initial location to place starting pin.")
                 self.waitingforgps = True
@@ -778,9 +458,9 @@ class OreonApp(MDApp):
                 self.EPin = MapMarker(lat=self.EPinLat, lon=self.EPinLon, source= "data/endpin.png")
                 self.mapviewTrack.add_marker(self.EPin)
                 print("End pin added")
+                self.CreateExistingMarkers.append(self.EPin)
                 
 
-                self.last = False
             except:
                 print("Uknown error while placing end pin")
         else:
@@ -798,6 +478,12 @@ class OreonApp(MDApp):
 
         self.root.current = "trackqr"
         print(self.String)
+
+        for marker in self.CreateExistingMarkers:
+            self.mapviewTrack.remove_marker(marker)
+        self.CreateExistingMarkers = []
+        print('Removing pins')
+        self.LineDraw.unload()
 
 
 if __name__ == '__main__':
