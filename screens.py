@@ -47,83 +47,146 @@ class CreateScreen(Screen):
 class CreateQRScreen(Screen):
     pass
 
-class ScanAnalyze(Preview):
-	extracted_data=ObjectProperty(None)
+class ScanAnalyze(Preview): #Analýza QR kódu
+    extracted_data=ObjectProperty(None) 
+    def analyze_pixels_callback(self, pixels, image_size, image_pos, scale, mirror): #Funkce pro analýzu
+        try:
+            pimage=Image.frombytes(mode='RGBA',size=image_size,data=pixels) #Rozeber obrázek na bitovou strukturu
+            list_of_all_barcodes=decode(pimage) #Ze struktury dekókuj QR pattern
+            
+
+            if list_of_all_barcodes: #Pokud se jedná o QR kód
+                first_barcode_data = list_of_all_barcodes[0].data.decode('utf-8') #Zapiš data do listu ve formátu UTF8
+                if self.extracted_data: #Pokud máš kam
+                    self.extracted_data(first_barcode_data) #Ulož data do univerzální proměnné
+                else:
+                    print("Not found")
+        except:
+            print('Invalid code')
 
 
-	def analyze_pixels_callback(self, pixels, image_size, image_pos, scale, mirror):
-		pimage=Image.frombytes(mode='RGBA',size=image_size,data=pixels)
-		list_of_all_barcodes=decode(pimage)
-		
-
-		if list_of_all_barcodes:
-			first_barcode_data = list_of_all_barcodes[0].data.decode('utf-8')
-			if self.extracted_data:
-				self.extracted_data(first_barcode_data)
-			else:
-				print("Not found")
 
 class ScanQRRun(Screen):
+    checkpoints = 0
     runpins = []
+    startpin = []
+    endpin = []
+    
     def on_enter(self, *args):
         self.ids.preview.connect_camera(enable_analyze_pixels = True,default_zoom=0.0)
-
+        self.done = False
+    
     @mainthread
     def got_result(self, result):
-        self.ids.ti.text=str(result)
-        self.qrdata = result
-       
-        self.checkpoint()
-  
+        try:
+            self.ids.ti.text=str(result)
+            self.qrdata = result
+            result = None
+            if self.done == False:
+                try:
+                    self.checkpoint()
+                except:
+                    print('Something is wrong with checking for checkpoint')
+            else: 
+                print("Already marked checkpoint.")
+        except:
+            print('Wrong QR code')
         
     def checkpoint(self):
-        app = App.get_running_app()
-        mapviewRun = app.root.get_screen('run').ids.mapview
-        
-        print('Matching checkpoint...')
-        Raw_data = self.qrdata
-        Proc_data = []
-        Proc_data = Raw_data.split()
-        self.Checkpoint_num = int(Proc_data[1])
-        if self.Checkpoint_num > 0 and self.Checkpoint_num < 99:
-            which = self.Checkpoint_num
-            chosenpin = self.runpins[which-1]
-            chosenpin = chosenpin.replace("-"," ").split()
-            print (chosenpin)
-            cpinLat = float(chosenpin[1])
-            cpinLon = float(chosenpin[2])
-            print (f"Checkpoint: {self.Checkpoint_num} Lat: {cpinLat} Lon: {cpinLon}")
-        app.root.current = 'run'
-
-        PinToRemove = app.ExistingMarkers[self.Checkpoint_num+1]
-        print(f'Existing markers = {app.ExistingMarkers}')
-        print(f'removing run pin {PinToRemove}')
-        mapviewRun.remove_marker(PinToRemove)
-        
-
-        #donepin = MapMarker(lat = cpinLat, lon = cpinLon, source= "data/donepin.png")
-        #mapviewRun.add_marker(donepin)
-        #app.ExistingMarkers.append(donepin)
-
-        mapviewPreview = app.root.get_screen('preview').ids.mapview
-        PinToRemovePreview = app.ExistingMarkersPreview[self.Checkpoint_num+1]
-        print(f'Existing markers = {app.ExistingMarkersPreview}')
-        print(f'removing preview pin {PinToRemovePreview}')
-        mapviewPreview.remove_marker(PinToRemovePreview)
-
-        #donepinpreview = MapMarker(lat = cpinLat, lon = cpinLon, source= "data/donepin.png")
-        #mapviewPreview.add_marker(donepinpreview)
-        #app.ExistingMarkersPreview.append(donepinpreview)
-        #print(f"This is the preview marker list: {app.ExistingMarkersPreview}")
-    def on_leave(self, *args):
         try:
+            scanQRcreate = ScanQRCreate()
+            app = App.get_running_app()
+            mapviewRun = app.root.get_screen('run').ids.mapview
+            mapviewPreview = app.root.get_screen('preview').ids.mapview
+
+            self.donepoints= []
+            StartLat = self.startpin[0]
+            StartLon = self.startpin[1]
+            EndLat = self.endpin[0]
+            EndLon = self.endpin[1]
             self.ids.preview.disconnect_camera()
+            
+
+
+            Raw_data = self.qrdata
+            Proc_data = []
+            Proc_data = Raw_data.split()
+            self.Checkpoint_num = int(Proc_data[1])
+            if self.Checkpoint_num > 0 and self.Checkpoint_num < 99:
+                numberofpoints = len(self.runpins)
+                m = 0
+                for i in range(numberofpoints):
+                    
+                    chosenpin = self.runpins[m]
+                    chosenpin = chosenpin.replace("-"," ").split()
+                
+                    which = int(chosenpin[0])
+                    if which == self.Checkpoint_num:
+                        cpinLat = float(chosenpin[1])
+                        cpinLon = float(chosenpin[2])
+                        self.runpins.pop(m)
+                        self.donepoints.append(cpinLat)
+                        self.donepoints.append(cpinLon)
+                        DonePin = MapMarker(lat = cpinLat, lon = cpinLon, source= "data/donepin.png")
+                        mapviewRun.add_marker(DonePin)
+
+                        DonePinP = MapMarker(lat = cpinLat, lon = cpinLon, source= "data/donepin.png")
+                        mapviewPreview.add_marker(DonePinP)
+                    else:
+                        m += 1
+                    app.root.current = 'run'
+
+            for marker in app.ExistingMarkers:
+                mapviewRun.remove_marker(marker)
+            
+            for marker in app.ExistingMarkersPreview:
+                mapviewPreview.remove_marker(marker)
+            
+            app.ExistingMarkers = []
+            app.ExistingMarkersPreview = []
+            
+            howmanypins = len(self.runpins)
+            n = 0
+            for i in range(howmanypins):
+                npin = self.runpins[n]
+                npin = npin.replace("-"," ").split()
+                npinLat = npin[1]
+                npinLon = npin[2]
+                npoint = MapMarker(lat = npinLat, lon = npinLon, source= "data/pin.png")
+                npointP = MapMarker(lat = npinLat, lon = npinLon, source= "data/pin.png")
+                mapviewRun.add_marker(npoint)
+                mapviewPreview.add_marker(npointP)
+                npin = []
+                n += 1
+                app.ExistingMarkers.append(npoint)
+                app.ExistingMarkersPreview.append(npointP)
+            
+            Spoint = MapMarker(lat = StartLat, lon = StartLon, source= "data/startpin.png")
+            Epoint = MapMarker(lat = EndLat, lon = EndLon, source= "data/finish.png")
+            mapviewRun.add_marker(Spoint)
+            app.ExistingMarkers.append(Spoint)
+            mapviewRun.add_marker(Epoint)
+            app.ExistingMarkers.append(Epoint)
+
+            SpointP = MapMarker(lat = StartLat, lon = StartLon, source= "data/startpin.png")
+            EpointP = MapMarker(lat = EndLat, lon = EndLon, source= "data/finish.png")
+            mapviewPreview.add_marker(SpointP)
+            app.ExistingMarkersPreview.append(SpointP)
+            mapviewPreview.add_marker(EpointP)
+            app.ExistingMarkersPreview.append(EpointP)
+
+            self.done = True
+        
+            
+
         except:
-            print('Camera already disconnected')
+            print('Problem with loading map')
+            
 class ScanQRCreate(Screen):
     
     
     def on_enter(self, *args):
+         self.Loaded = False
          self.ids.preview.connect_camera(enable_analyze_pixels = True,default_zoom=0.0)
 
     @mainthread
@@ -135,11 +198,14 @@ class ScanQRCreate(Screen):
         except:
             print('Invalid track QR')
         
-        self.load_map()
+        if self.Loaded == False:
+            self.load_map()
+        else:
+            print("Map already loaded")
        
-        time.sleep(1)
 
     def proc_track_string(self):
+        
         #The function that will process the string of a track into individual data pieces that are:
         #0 - Number of checkpoints (will count by this number to make sure it's real)
         #1 - Checkpoint n lat
@@ -151,11 +217,11 @@ class ScanQRCreate(Screen):
         #7 - Name of the track
         #8 - Track description
 
-        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-This@is@a@testing@track@for@loading@a@string
+        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-Description
 
         RawString = self.qrdata
         ArrString = []
-  
+
         RawString=RawString.replace("-", " ").split()
         ArrString = RawString
         n = 0
@@ -168,9 +234,11 @@ class ScanQRCreate(Screen):
             pointn += 1
             print(f"Point number {pointn} lattitude is {PinLat} and longitude is {PinLon}")
             n += 2
+       
 
         StartLat = ArrString[Checkpoints*2+1]
         self.StartLat = float(StartLat)
+        
         Startlon = ArrString[Checkpoints*2+2]
         self.StartLon = float(Startlon)
         print(f"Starting lat is {StartLat} and lon is {Startlon}")
@@ -197,6 +265,8 @@ class ScanQRCreate(Screen):
         app.ExistingMarkersPreview = []
         self.runpins = []
         qr_run = ScanQRRun()
+        self.Loaded = True
+        
 
         print('Loading map from QR code')
         app.root.current = 'run'
@@ -204,25 +274,28 @@ class ScanQRCreate(Screen):
         mapviewPreview = app.root.get_screen('preview').ids.mapview
         RawString = self.qrdata
         ArrString = []
-        time.sleep(1)
 
         Spoint = MapMarker(lat = self.StartLat, lon = self.StartLon, source= "data/startpin.png")
         SpointPreview = MapMarker(lat = self.StartLat, lon = self.StartLon, source= "data/startpin.png")
+        qr_run.startpin.append(self.StartLat)
+        qr_run.startpin.append(self.StartLon)
         mapviewRun.add_marker(Spoint)
         mapviewPreview.add_marker(SpointPreview)
         print('placing startpin')
         mapviewRun.center_on(self.StartLat, self.StartLon)
         mapviewPreview.center_on(self.StartLat, self.StartLon)
         app.ExistingMarkers.append(Spoint)
-        app.ExistingMarkersPreview.append(Spoint)
+        app.ExistingMarkersPreview.append(SpointPreview)
 
 
-        Epoint = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/endpin.png")
-        EpointPreview = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/endpin.png")
+        Epoint = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/finish.png")
+        EpointPreview = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/finish.png")
+        qr_run.endpin.append(self.EndLat)
+        qr_run.endpin.append(self.EndLon)
         mapviewRun.add_marker(Epoint)
         mapviewPreview.add_marker(EpointPreview)
         app.ExistingMarkers.append(Epoint)
-        app.ExistingMarkersPreview.append(Epoint)
+        app.ExistingMarkersPreview.append(EpointPreview)
 
         print('placing Endpin')
 
@@ -231,6 +304,7 @@ class ScanQRCreate(Screen):
         n = 0
         pointn = 0
         Checkpoints = int(ArrString[0])
+        qr_run.checkpoints = Checkpoints
         for i in range(Checkpoints):
             PinLat = ArrString[n+1]
             PinLon = ArrString[n+2]
@@ -246,8 +320,23 @@ class ScanQRCreate(Screen):
             mapviewRun.add_marker(point)
             mapviewPreview.add_marker(pointPreview)
             app.ExistingMarkers.append(point)
-            app.ExistingMarkersPreview.append(point)
+            app.ExistingMarkersPreview.append(pointPreview)
             print(f"Existing markers list to remove = {app.ExistingMarkers}")
+
+            
+
+    def build_startend_points(self):
+        app = App.get_running_app()
+        mapviewRun = app.root.get_screen('run').ids.mapview
+
+        Spoint = MapMarker(lat = self.StartLat, lon = self.StartLon, source= "data/startpin.png")
+        Epoint = MapMarker(lat = self.EndLat, lon = self.EndLon, source= "data/endpin.png")
+        mapviewRun.add_marker(Spoint)
+        app.ExistingMarkers.append(Spoint)
+        mapviewRun.add_marker(Epoint)
+        app.ExistingMarkers.append(Epoint)
+
+
 
     def on_leave(self, *args):
         try:
