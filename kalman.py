@@ -10,12 +10,12 @@ class KalmanFilter:
         self.process_covariance = process_covariance
 
     def predict(self):
-        # Predict the next state
+        # Předpověd dalšího stavu
         self.state_mean = np.dot(self.transition_matrix, self.state_mean)
         self.state_covariance = np.dot(self.transition_matrix, np.dot(self.state_covariance, self.transition_matrix.T)) + self.process_covariance
 
     def update(self, observation):
-        # Update the state based on observation
+        # Updatuj na základě pozorování
         innovation = observation - np.dot(self.observation_matrix, self.state_mean)
         innovation_covariance = np.dot(self.observation_matrix, np.dot(self.state_covariance, self.observation_matrix.T)) + self.observation_covariance
         kalman_gain = np.dot(self.state_covariance, np.dot(self.observation_matrix.T, np.linalg.inv(innovation_covariance)))
@@ -29,16 +29,13 @@ class KalmanSmoother:
     def smooth(self, observations):
         smoothed_states = []
 
-        # Run the forward pass of the Kalman filter
         for observation in observations:
             self.filter.predict()
             self.filter.update(observation)
 
-        # Run the backward pass of the Kalman filter (smoother)
         for observation in reversed(observations):
             smoothed_states.append(self.filter.state_mean)
             kalman_gain = np.dot(self.filter.state_covariance, np.dot(self.filter.transition_matrix.T, np.linalg.inv(self.filter.state_covariance)))
             self.filter.state_mean = self.filter.state_mean + np.dot(kalman_gain, smoothed_states[-1] - np.dot(self.filter.transition_matrix, self.filter.state_mean))
 
-        # Reverse the list to get the correct order of smoothed states
         return list(reversed(smoothed_states))
