@@ -43,12 +43,12 @@ class LineDrawLayer(MapLayer):
         return self._line_points_offset
 
     def calc_line_points(self):
-        # Offset all points by the coordinates of the first point,
-        # to keep coordinates closer to zero.
-        # (and therefore avoid some float precision issues when drawing lines)
+        #Posuň všechny body o koordináty první bodů
+        #pro udržení všech koordianátů blíže nule
+        #(Vyhneme se problémum s float precision při vytváření čar)
         self._line_points_offset = (self.get_x(self.coordinates[0][1]),
                                     self.get_y(self.coordinates[0][0]))
-        # Since lat is not a linear transform we must compute manually
+        # Protože "lat" není lineární transform, musíme vypočítat manuálně
         self._line_points = [(self.get_x(lon) - self._line_points_offset[0],
                               self.get_y(lat) - self._line_points_offset[1])
                              for lat, lon in self.coordinates]
@@ -70,12 +70,11 @@ class LineDrawLayer(MapLayer):
         lat = radians(clamp(-lat, MIN_LATITUDE, MAX_LATITUDE))
         return (1.0 - log(tan(lat) + 1.0 / cos(lat)) / pi) * self.ms / 2.0
 
-    # Function called when the MapView is moved
+    # Funkce, zavolaná když se mapview pohne
     def reposition(self):
         map_view = self.parent
 
-        # Must redraw when the zoom changes
-        # as the scatter transform resets for the new tiles
+        # Musí se překreslit když se "zoom" změní
         if self.zoom != map_view.zoom or \
                    self.lon != round(map_view.lon, 7) or \
                    self.lat != round(map_view.lat, 7):
@@ -90,7 +89,7 @@ class LineDrawLayer(MapLayer):
 
     def clear_and_redraw(self, *args):
         with self.canvas:
-            # Clear old line
+            # Vymaž staré čáry
             self.canvas.clear()
 
         self._draw_line()

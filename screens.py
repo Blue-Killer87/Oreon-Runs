@@ -31,11 +31,14 @@ class TrackingScreen(Screen):
         app_instance.GPSstart()
         app_instance.waitingforgps = True
         self.TrackPointCounter = 0
-
+        
     def on_leave(self, *args):
         app_instance = App.get_running_app()
         try:
-            gps.stop()
+            if app_instance.GPSonBackground == False:
+                gps.stop()
+            else:
+                pass
         except NotImplementedError:
             print("Problem with GPS, not implemented on your platform.")
         
@@ -205,19 +208,6 @@ class ScanQRCreate(Screen):
        
 
     def proc_track_string(self):
-        
-        #The function that will process the string of a track into individual data pieces that are:
-        #0 - Number of checkpoints (will count by this number to make sure it's real)
-        #1 - Checkpoint n lat
-        #2 - Checkpoint n lon (n times criss cross)
-        #3 - Starting point lat
-        #4 - Starting point lon
-        #5 - Ending point lat
-        #6 - Ending point lon
-        #7 - Name of the track
-        #8 - Track description
-
-        #Example loaded string: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-Description
 
         RawString = self.qrdata
         ArrString = []

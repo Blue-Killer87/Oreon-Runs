@@ -1,7 +1,7 @@
 from kivymd.app import MDApp
 from kivy.clock import mainthread, Clock
 from kivy.utils import platform
-from plyer import gps
+from plyer import gps, notification
 from kivy_garden.mapview import MapMarker
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
@@ -11,19 +11,23 @@ from kivy.metrics import dp, sp
 from kivy_garden.qrcode import QRCodeWidget
 from kivymd.uix.label import MDLabel
 from LineDrawLayer import LineDrawLayer
-from plyer import filechooser
 from screens import *
-
-
+import numpy as np
+from kalman import KalmanSmoother
+from kivy.core.window import Window
+from pathlib import Path
+from kivy.uix.boxlayout import BoxLayout
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
 
 
+
+
 class OreonApp(MDApp):
 
 ################################################################################################################
-#Settings to setup at start:
+#Základní nastavení na startu:
     
     def build(self):
             self.theme_cls.theme_style = "Dark" #Background
@@ -51,15 +55,62 @@ class OreonApp(MDApp):
             self.CreateExistingMarkers = []
             self.ExistingMarkersPreview = []
             self.LineDraw = LineDrawLayer()
-
+            self.observations = []
+            self.GPSonBackground = False
+            #self.start_service()
             if platform == 'android':
                 self.request_android_permissions()
 
+            
+        
+                
+    def on_gps_update(self):
+        # Update Kalmanova Filteru (W.I.P)
+        observation = [self.gpslat, self.gpslon]
+        self.filtered_state_means = self.kalman_filter.filter_update(
+            self.filtered_state_means, observation
+        )[0]
 
+        # Update s uhlazenými souřadnicemi
+        #smooth_lat, smooth_lon = self.filtered_state_means[0], self.filtered_state_means[1]
+        #marker = MapMarker(lat=smooth_lat, lon=smooth_lon)
+        #self.mapviewRun.add_marker(marker)
+    '''
+    Servis na pozadí (W.I.P)
+    def andoid_start_service(name):  
+        from android import mActivity  
+        from jnius import autoclass  
+        context = mActivity.getApplicationContext()  
+        service_name = str(context.getPackageName()) + '.Service' + name  
+        service = autoclass(service_name)  
+        service.start(mActivity, '')  # starts or re-initializes a service  
+        return service
 
+    def start_service(self):  
+        #dprint('entered start_service()')  
+    
+        if platform == 'android':  
+            self.service = andoid_start_service('Gps') # must start with and contain only one capital letter !  
+            #dprint(f'started android service. {self.service}')  
 
+        elif platform in ('linux', 'linux2', 'macos', 'win'):  
+            from runpy import run_path  
+            from threading import Thread  
+            self.service = Thread(  
+                target=run_path,  
+                args=['./gps.py'],  
+                kwargs={'run_name': '__main__'},  
+                daemon=True  
+            )  
+            self.service.start()  
+    
+        else:  
+            raise NotImplementedError(  
+                "service start not implemented on this platform"  
+            )
+    '''
 ################################################################################################################
-#GPS configurations and start:
+#GPS konfigurace a inicializace:
                 
     if platform == "android":
         def on_start(self):
@@ -72,11 +123,11 @@ class OreonApp(MDApp):
             self.removelat = 0
             self.removelon = 0
 
-        #Main GPS method, calls itself every time the app gets new GPS telemtry
+        #Hlavní GPS funkce, zavolá se vždy když se obdrží nová GPS telemetrie
         @mainthread
         def on_location(self, **kwargs):
             print("Got location")
-            if (kwargs['accuracy'] < 10 or kwargs['accuracy'] > 99):
+            if (kwargs['accuracy'] < 20 or kwargs['accuracy'] > 110):
                 print(kwargs)
                 print('Location is bad')
                 #self.aproxgpslat = kwargs["lat"]
@@ -87,6 +138,10 @@ class OreonApp(MDApp):
                 print('Location is fine')
                 self.gpslat = kwargs["lat"]
                 self.gpslon = kwargs["lon"]
+
+                self.loc = np.array([self.gpslat, self.gpslon])
+                self.observations.append(self.loc)
+
                 if self.waitingforgps == True:
                     self.startPin()
                     self.waitingforgps == False
@@ -94,25 +149,35 @@ class OreonApp(MDApp):
                 Clock.schedule_once(self.proc_location, 0)
 
         def proc_location(self, dt):        
-            #self.point = MapMarker(lat = self.gpslat, lon = self.gpslon, source= "data/Blank.png")
-            #
-            #mapview.remove_marker(self.point)
-            #if self.root.current == 'run':
-                #self.mapviewRun.add_marker(self.point)
-            #else:
-               # self.mapviewTrack.add_marker(self.point)
-                
-            # You can import JSON data here or:
-            my_coordinates = [[51.505807, -0.128513], [51.126251, 1.327067],
-                            [50.959086, 1.827652], [48.85519, 2.35021]]
-
-            # Red Route (multiple routes)
-            lml1 = LineDrawLayer(coordinates=my_coordinates, color=[1, 0, 0, 1])
-            self.mapviewRun.add_layer(lml1, mode="scatter")
             
+            '''     
+            Další Kalman funkce (W.I.P)
+
+            initial_state_mean = np.array([0, 0])  # Initial position (latitude, longitude)
+            initial_state_covariance = np.eye(2) * 0.1  # Initial covariance matrix
+            transition_matrix = np.eye(2)  # Identity matrix for simplicity
+            observation_matrix = np.eye(2)  # Identity matrix for simplicity
+            observation_covariance = np.eye(2) * 0.1  # Observation covariance matrix
+            process_covariance = np.eye(2) * 0.01  # Process covariance matrix
+            print(f'Kalman inicialises...')
+            kalman_smoother = KalmanSmoother(initial_state_mean, initial_state_covariance, transition_matrix, observation_matrix, observation_covariance, process_covariance)
+            smoothed_states = kalman_smoother.smooth(self.observations)
+            
+
+            print(f'Smoothened states: {smoothed_states}')
+            for state in smoothed_states:
+                print(f'State: {state}')
+            try:
+                self.smoothlatOLD = self.smoothlat
+                self.smoothlonOLD = self.smoothlon
+            except:
+                print("First location, no previous kalman results.")
+            '''
+       
+
             if self.oldlat != 0 and self.oldlon != 0:
-                # Blue route (two points)
-                my_coordinates = [[self.oldlat, self.oldlon], [self.gpslat, self.gpslon]]
+                # Kreslení čáry
+                my_coordinates = [[self.gpslat, self.gpslon], [self.oldlat, self.oldlon]]
                 lml3 = LineDrawLayer(coordinates=my_coordinates, color=[0, 0, 1, 1])
                 if self.root.current == 'run':
                     self.mapviewRun.add_layer(lml3, mode="scatter")
@@ -125,7 +190,7 @@ class OreonApp(MDApp):
             self.oldlat = self.gpslat
             self.oldlon = self.gpslon
 
-    #If platform is not Android, don't turn GPS on      
+    #Pokud platforma není Android, nezapípen lokaci    
     else:
         print("Desktop version starting.")
 
@@ -148,11 +213,17 @@ class OreonApp(MDApp):
         else:
             print("unsupported platform for GPS")
 
+    def StaticGPS(self):
+        if platform == 'android':
+            print('Inicialising GPS and stuff')
+            gps.start(minTime= 5000, minDistance=15)
+        else:
+            print("unsupported platform for GPS")
 
 
 
 ################################################################################################################
-#Stopwatch functions:
+#Funkce pro stopky:
 
     def update(self, *args):
         self.seconds += 1
@@ -165,20 +236,20 @@ class OreonApp(MDApp):
                 self.minutes = 0
                 self.hours += 1
 
-        # Update the label text with leading zeros
+        # Updatuj labely na počáteční nuly (01,02...)
         self.stopwatch.text = f'{self.format_digit(self.hours)}:{self.format_digit(self.minutes)}:{self.format_digit(self.seconds)}'
 
 
     def format_digit(self, value):
-        # Helper function to add leading zero if value is less than 10
+        # Pomocná funkce pro počáteční nuly
         return f'{value:02}'
 
     def toggle_counter(self, on):
-        # Turn on/off the counter label by adjusting its opacity
+        # Vypínání a zapínání stopek (Jen widgetu, né funkce) 
         self.stopwatch.opacity = 1.0 if on else 0.0
 
     def stop_counter(self):
-        # Stop the counter by canceling the scheduled updates
+        # Ukončení počítání stopek
         self.root.get_screen('run').remove_widget(self.stopwatch)
         self.root.get_screen('preview').add_widget(self.stopwatch)
 
@@ -190,12 +261,12 @@ class OreonApp(MDApp):
         Clock.unschedule(self.update)
 
     def get_counter_data(self):
-        # Return the current counter data
+        # Návrat dat ze stopek
         return {'hours': self.hours, 'minutes': self.minutes, 'seconds': self.seconds}
     
 
 ################################################################################################################
-#QR generation functions:
+#Funkce generátoru QR kódů:
     
     def submit_create(self):
         try:
@@ -204,7 +275,7 @@ class OreonApp(MDApp):
                 self.root.current = "createqr"
                 self.a = 0
                 self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
-                self.infoLabel = MDLabel(text='You can create and download your QR codes here, one by one.', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
+                self.infoLabel = MDLabel(text='Zde si můžete vytvořit a stáhnout QR kódy jeden po druhém .', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
                 self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
                 self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
                 self.WhichQR = Label(text='', font_size=dp(25), halign='center', valign='middle', color=(1,1,1,1), markup='True')
@@ -230,7 +301,8 @@ class OreonApp(MDApp):
                 self.root.get_screen('createqr').ids.floatqr.add_widget(QRCodeWidget(data=f"OreonQRcodeCheckpoint {self.a}"))
                 QRCodeWidget.size_hint=(.9, .6)
                 QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
-                self.WhichQR.text=f'Checkpoint #{self.a}'
+                QRCodeWidget.show_border = False
+                self.WhichQR.text=f'Stanovišťě #{self.a}'
                 self.generated = True
                 self.QR = QRCodeWidget(data=f"QRcodeCheckpoint {self.a}")
                 
@@ -242,32 +314,54 @@ class OreonApp(MDApp):
             QRCodeWidget.size_hint=(.9, .6)
             QRCodeWidget.pos_hint = {'center_x': 0.5, 'center_y': 0.6}
             self.QR = QRCodeWidget(data=self.String)
-
-
-
-    def file_chooser(self):
-        filechooser.choose_dir(on_selection=self.selected)
-
-    def selected(self, selection):
-        print(selection)
-        if selection:
-            self.qrpath = selection[0]
-            self.downloadQR()
+            self.QR.size_hint = (.7, .7)
+            self.QR
+       
 
     def downloadQR(self):
-        if self.root.current == 'createqr':
-            print(f'Exporting checkpoint QR code as {self.qrpath}/QRCheckpoint{self.a}.png')
-            self.QR.export_to_png(f'{self.qrpath}/QRCheckpoint{self.a}.png')
+        if platform == 'android':
+            from android.storage import primary_external_storage_path
+            dir = primary_external_storage_path()
+            download_dir_path = os.path.join(dir, 'Download')
+
+            if self.root.current == 'createqr':
+                print(f'Exporting checkpoint QR code as {download_dir_path}/QRCheckpoint{self.a}.png')
+                self.QR.export_to_png(filename= f'{download_dir_path}/QRCheckpoint{self.a}.png', scale=5)
             
+            else:
+                try:
+                    print(f'Exporting track QR code as {download_dir_path}/QRTrack.png')
+                    self.QR.export_to_png(filename= f'{download_dir_path}/QRTrack.png', scale=5)
+                    
+                                        
+                except:
+                    print('Something went wrong with exporting track QR')
+
         else:
-            try:
-                self.QR.export_to_png(f'{self.qrpath}/QRTrack-{self.trackname}')
-                                      
-            except:
-                print('Something went wrong with exporting track QR')
+            path = str(Path.home() / "Downloads")
+            if self.root.current == 'createqr':
+                print(f'Exporting checkpoint QR code as {path}/QRCheckpoint{self.a}.png')
+                self.QR.export_to_png(filename= f'{path}/QRCheckpoint{self.a}.png', scale=5)
+                notification.notify(
+                    title = "QR downloaded",
+                    message=" You can find your QR in your downloads folder" ,
+                    timeout=2
+                )
+            
+            else:
+                try:
+                    print(f'Exporting track QR code as {path}/QRTrack.png')
+                    self.QR.export_to_png(filename= f'{path}/QRTrack.png', scale=5)
+                    notification.notify(
+                        title = "QR downloaded",
+                        message=" You can find your QR in your downloads folder" ,
+                        timeout=2
+                    )                    
+                except:
+                    print('Something went wrong with exporting track QR')
 
 ################################################################################################################
-#Permissions:
+#Oprávnění:
     
     def request_android_permissions(self):
 
@@ -284,27 +378,27 @@ class OreonApp(MDApp):
     
 
 ################################################################################################################
-#The exit dialog function:
+#Funkce dialogu:
     dialog = None
 
     def show_alert_dialog(self):
         if self.root.current == "run" and self.started == True:
-            #Debug in case dialog switch fails
+            #Debug v případě, že přepínač dialogu selže
             #print(self.started)
             #print(self.root.current)
             if not self.dialog:
                 self.dialog = MDDialog(
-                    text="Are you sure you want to stop the run? (You can't resume it later')",
+                    text="Chcete ukončit běh? (Běh nelze obnovit)",
                     buttons=[
                         MDFlatButton(
-                            text="CONTINUE",
+                            text="Pokračovat",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_press=self.cancelcall,
 
                         ),
                         MDFlatButton(
-                            text="STOP",
+                            text="Ukončit",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_press=self.discardcall,
@@ -315,22 +409,22 @@ class OreonApp(MDApp):
 
 
         else:
-            #Debug in case dialog switch fails
+            #Debug v případě, že přepínač dialogu selže
             #print(self.started)
             #print(self.root.current)
             if not self.dialog:
                 self.dialog = MDDialog(
-                    text="Are you sure you want to go back?",
+                    text="Opravdu se chcete vrátit?",
                     buttons=[
                         MDFlatButton(
-                            text="Stay here",
+                            text="Zůstat zde",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_press=self.cancelcall,
 
                         ),
                         MDFlatButton(
-                            text="Go back",
+                            text="Jít zpět",
                             theme_text_color="Custom",
                             text_color=self.theme_cls.primary_color,
                             on_press=self.discardcall,
@@ -390,7 +484,7 @@ class OreonApp(MDApp):
                 print("No stopwatches existed")
 
 ################################################################################################################
-#Track create pin functions:
+#Vytváření pinů pro trasování:
     def placePin(self):
         if platform == 'android':
             try:
@@ -474,7 +568,7 @@ class OreonApp(MDApp):
         print(f"EpinLon: {self.EPinLon}")
         self.PinString = "-".join(str(element) for element in self.TrackPins)
 
-        self.String =  f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}-sgdgdg-{self.checkpoints}"
+        self.String =-f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}"
 
         self.root.current = "trackqr"
         print(self.String)

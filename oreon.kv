@@ -65,7 +65,7 @@ ScreenManager:
                     source: 'data/BackgroundOreon.png'
 
         MDFillRoundFlatIconButton:
-            text: "Load Track"
+            text: "Načíst trasu"
             icon: "go-kart-track"
             icon_size: "64sp"
             font_size: sp(25)  
@@ -75,7 +75,7 @@ ScreenManager:
                 app.root.current = "choosetrack"
             md_bg_color: .1,.2,1,1
         MDFillRoundFlatIconButton:
-            text: "Create Track"
+            text: "Vytvořit trasu"
             icon: "draw"
             icon_size: "64sp"
             font_size: sp(25)  
@@ -92,8 +92,8 @@ ScreenManager:
     name: "choosetrack"
 
     MDRectangleFlatIconButton:
-        text:"Load from local library"
-        on_press: app.root.current = "run"
+        text:"Načíst ze souboru"
+        
         font_size: sp(30)
         icon:"library"
         size_hint: .6, .3
@@ -102,7 +102,7 @@ ScreenManager:
 
 
     MDRectangleFlatIconButton:
-        text:"Load from QR code"
+        text:"  Načíst z QR kódu"
         on_press: app.root.current = "scan_create"
         font_size: sp(30)
         icon:"qrcode-scan"
@@ -113,7 +113,7 @@ ScreenManager:
     MDIconButton:
         icon: "keyboard-backspace"
         on_release: app.root.current="welcome"
-        pos_hint: {"center_x": .04, "center_y": .95}
+        pos_hint: {"center_x": .08, "center_y": .94}
         md_bg_color: .1,.2,1,1
 
 
@@ -133,11 +133,11 @@ ScreenManager:
 			id:ti
 
         MDFillRoundFlatIconButton:
-            text: "Go back"
+            text: "Zpět"
             icon: "keyboard-backspace" 
             on_release: app.root.current="welcome"
             font_size: sp(30)  
-            size_hint:(.3, .05)
+            size_hint:(.4, .05)
             pos_hint: {"center_x": .5, "center_y": .1}
             md_bg_color: .1,.2,1,1
 
@@ -156,11 +156,11 @@ ScreenManager:
 			id:ti
 
         MDFillRoundFlatIconButton:
-            text: "Go back"
+            text: "Zpět"
             icon: "keyboard-backspace" 
-            on_release: app.root.current="welcome"
+            on_release: app.root.current="run"
             font_size: sp(30)  
-            size_hint:(.3, .05)
+            size_hint:(.4, .05)
             pos_hint: {"center_x": .5, "center_y": .1}
             md_bg_color: .1,.2,1,1
 
@@ -239,7 +239,7 @@ ScreenManager:
 
                 MDIconButton:
 
-                    on_press: app.root.current = "scan_run" 
+                    on_press: app.root.current = "scan_run" if app.started else 'run'
                     font_size: sp(20)
                     icon:"qrcode-scan"  
                     halign: 'center'
@@ -266,7 +266,7 @@ ScreenManager:
     name: 'create'
     FloatLayout:
         MDLabel:
-            text: "Create new track"
+            text: "Vytvořit novou trasu"
             color: "orange"
             halign: "center"
             pos_hint: {"center_x": .5, "center_y": .9}
@@ -274,8 +274,8 @@ ScreenManager:
         
         MDTextField:
             id: tname
-            hint_text: "Track name"
-            helper_text: "Insert your new track name here"
+            hint_text: "Název trasy"
+            helper_text: "Vložte název vaší trasy"
             helper_text_mode: "on_focus"
             mode: "round"
             pos_hint: {"center_x": .5, "center_y": .75}
@@ -284,8 +284,8 @@ ScreenManager:
 
         MDTextField:
             id: tdescription
-            hint_text: "Description"
-            helper_text: "Add your description for the track"
+            hint_text: "Popis"
+            helper_text: "Vložte popis vaší trasy"
             helper_text_mode: "on_focus"
             mode: "round"
             pos_hint: {"center_x": .5, "center_y": .63}
@@ -294,8 +294,8 @@ ScreenManager:
       
         MDTextField:
             id: tcheckpoints
-            hint_text: "Checkpoints"
-            helper_text: "Specify number of checkpoints, set higher if not sure."
+            hint_text: "Stanovišťě"
+            helper_text: "Specifikujte množštví stanovišť (Vložte víc pokud si nejste jisti)"
             helper_text_mode: "on_focus"
             mode: "round"
             pos_hint: {"center_x": .5, "center_y": .51}
@@ -303,16 +303,16 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
         
         MDFillRoundFlatIconButton:
-            text: "Submit"
+            text: "Potvrdit"
             icon: "keyboard-return" 
             on_release: app.submit_create()
             font_size: sp(30)  
             size_hint:(.3, .1)
-            pos_hint: {"center_x": .5, "center_y": .39}
+            pos_hint: {"center_x": .5, "center_y": .35}
             md_bg_color: .1,.2,1,1
 
         MDFillRoundFlatIconButton:
-            text: "Go back"
+            text: "Zpět"
             icon: "keyboard-backspace" 
             on_release: app.root.current="welcome"
             font_size: sp(30)  
@@ -328,10 +328,26 @@ ScreenManager:
         lon: 14.8
         zoom: 15
         map_source: MapSource(max_zoom=20, min_zoom=10)
+    FloatLayout:
+        MDCheckbox:
+            pos_hint: {"center_x": .96, "center_y": .85}
+            size_hint: (0.1, 0.2)
+            icon_active: "check"
+            icon_inactive: "close"
+            icon_active_color: "green"
+            icon_inactive_color: "red"
+            track_color_disabled: "red"
+        MDLabel:
+            pos_hint: {"center_x": .9, "center_y": .9}
+            size_hint: (0.2, 0.2)
+            theme_text_color: "Custom"
+            text_color: 0, 0, 1, 1
+            text: "GPS na pozadí"
 
     Toolbar:
         id: toolbar
         top: root.top
+        
         FloatLayout:
             MDIconButton:
                 on_release: app.placePin()
@@ -361,6 +377,11 @@ ScreenManager:
 
                 md_bg_color: .1,.2,1,1
 
+    
+
+            
+
+
 <CreateQRScreen>
     name: 'createqr'
     FloatLayout:
@@ -369,18 +390,18 @@ ScreenManager:
 
 
         MDFillRoundFlatIconButton:
-            text: 'Generate QR code'
+            text: 'Generovat QR kód'
             icon: 'qrcode-edit'
             pos_hint: {"center_x": .5, "center_y": .21}
             font_size: sp(30)
             on_release: app.gen_qr()
 
         MDFillRoundFlatIconButton:
-            text: 'Download QR code'
+            text: 'Stáhnout QR kód'
             icon: 'download'
             pos_hint: {"center_x": .5, "center_y": .06}
             font_size: sp(30)
-            on_release: app.file_chooser()
+            on_release: app.downloadQR()
 
 <GetTrackQR>
     name: 'trackqr'
@@ -388,24 +409,24 @@ ScreenManager:
         id: floatqr
 
         MDFillRoundFlatIconButton:
-            text: 'Generate QR code'
+            text: 'Generovat QR kód'
             icon: 'qrcode-edit'
             pos_hint: {"center_x": .5, "center_y": .21}
             font_size: sp(30)
             on_release: app.gen_qr()
 
         MDFillRoundFlatIconButton:
-            text: 'Download QR code'
+            text: 'Stáhnout QR kód'
             icon: 'download'
             pos_hint: {"center_x": .5, "center_y": .06}
             font_size: sp(30)
-            on_release: app.file_chooser
+            on_release: app.downloadQR()
 
         MDFillRoundFlatIconButton:
-            text: "Go back"
+            text: "Zpět"
             icon: "keyboard-backspace" 
             on_release: app.root.current="welcome"
             font_size: sp(30)  
-            size_hint:(.3, .05)
+            size_hint:(.4, .05)
             pos_hint: {"center_x": .5, "center_y": .95}
             md_bg_color: .1,.2,1,1
