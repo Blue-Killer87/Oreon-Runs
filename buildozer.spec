@@ -29,7 +29,7 @@ source.include_exts = py,png,jpg,kv,atlas,xml
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.6.0
+version = 0.8.0
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -37,7 +37,7 @@ version = 0.6.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, kivy, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy, qrcode, kivy_garden.qrcode, typing_extensions, pypng
+requirements = python3, kivy, pillow, materialyoucolor, kivy_garden.mapview, openssl, requests, charset_normalizer, chardet, idna, urllib3, libzbar, sdl2_ttf, certifi, kivyMD, https://github.com/HyTurtle/plyer/archive/master.zip, camera4kivy, gestures4kivy, setuptools, libiconv, libzbar, pyzbar, pyjnius, android, exceptiongroup, asyncgui, asynckivy, qrcode, kivy_garden.qrcode, typing_extensions, pypng, numpy, Image
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
@@ -52,7 +52,8 @@ icon.filename = %(source.dir)s/data/Logo.png
 orientation = portrait
 
 # (list) List of service to declare
-#services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
+services = Gps:gps.py:foreground
+
 
 #
 # OSX Specific
@@ -92,7 +93,7 @@ fullscreen = 0
 #icon.adaptive_background.filename = %(source.dir)s/data/icon_bg.png
 
 # (list) Permissions
-android.permissions = INTERNET, ACCESS_FINE_LOCATION, WRITE_EXTERNAL_STORAGE, CAMERA, READ_EXTERNAL_STORAGE, ACCESS_COURSE_LOCATION
+android.permissions = INTERNET, ACCESS_FINE_LOCATION, WRITE_EXTERNAL_STORAGE, CAMERA, READ_EXTERNAL_STORAGE, ACCESS_COURSE_LOCATION, FOREGROUND_SERVICE
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -107,7 +108,7 @@ android.api = 33
 #android.sdk = 20
 
 # (str) Android NDK version to use
-#android.ndk = 25b
+#android.ndk = 23b
 
 # (int) Android NDK API to use. This is the minimum API your app will support, it should usually match android.minapi.
 #android.ndk_api = 21
@@ -116,8 +117,7 @@ android.api = 33
 #android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-#android.ndk_path =
-
+#android.ndk_path = 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
 #android.sdk_path =
 
