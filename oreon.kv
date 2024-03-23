@@ -265,6 +265,7 @@ ScreenManager:
 <CreateScreen>
     name: 'create'
     FloatLayout:
+        id: floatcr
         MDLabel:
             text: "Vytvořit novou trasu"
             color: "orange"
@@ -283,7 +284,7 @@ ScreenManager:
             md_bg_color: .1,.2,1,1
 
         MDTextField:
-            id: tdescription
+            id: tdesc
             hint_text: "Popis"
             helper_text: "Vložte popis vaší trasy"
             helper_text_mode: "on_focus"
