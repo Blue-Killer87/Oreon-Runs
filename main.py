@@ -311,7 +311,6 @@ class OreonApp(MDApp):
         self.error.opacity = self.fade
         self.fade -= 0.05
         self.fade = round(self.fade,2)
-        print(self.fade)
         if self.fade <= 0:
             self.removecreatelabel()
         else:
