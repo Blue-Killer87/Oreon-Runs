@@ -20,7 +20,20 @@ from kivy.uix.boxlayout import BoxLayout
 #if platform != "android" or platform != "ios":
  #   Window.size = (900, 800)
   #  Window.minimum_width, Window.minimum_height = Window.size
+if platform == 'android':
+    import android
+import math
 
+def android_start_service(name):  
+        from android import mActivity  
+        from jnius import autoclass  
+        print(f'Starting service {name}')
+        context = mActivity.getApplicationContext()  
+        service_name = str(context.getPackageName()) + '.Service' + name  
+        service = autoclass(service_name)  
+        service.start(mActivity, '')  # starts or re-initializes a service  
+        print('service started')
+        return service
 
 
 
@@ -57,9 +70,12 @@ class OreonApp(MDApp):
             self.LineDraw = LineDrawLayer()
             self.observations = []
             self.GPSonBackground = False
-            #self.start_service()
+            if platform == 'android':
+                self.start_service()
+
             if platform == 'android':
                 self.request_android_permissions()
+
 
             
         
@@ -75,22 +91,16 @@ class OreonApp(MDApp):
         #smooth_lat, smooth_lon = self.filtered_state_means[0], self.filtered_state_means[1]
         #marker = MapMarker(lat=smooth_lat, lon=smooth_lon)
         #self.mapviewRun.add_marker(marker)
-    '''
-    Servis na pozadí (W.I.P)
-    def andoid_start_service(name):  
-        from android import mActivity  
-        from jnius import autoclass  
-        context = mActivity.getApplicationContext()  
-        service_name = str(context.getPackageName()) + '.Service' + name  
-        service = autoclass(service_name)  
-        service.start(mActivity, '')  # starts or re-initializes a service  
-        return service
+
+    #Servis na pozadí (W.I.P)
+    
 
     def start_service(self):  
         #dprint('entered start_service()')  
-    
+        print("Start_Service got called")
         if platform == 'android':  
-            self.service = andoid_start_service('Gps') # must start with and contain only one capital letter !  
+            print("Android detected, starting android service")
+            self.service = android_start_service('Gps')
             #dprint(f'started android service. {self.service}')  
 
         elif platform in ('linux', 'linux2', 'macos', 'win'):  
@@ -108,7 +118,6 @@ class OreonApp(MDApp):
             raise NotImplementedError(  
                 "service start not implemented on this platform"  
             )
-    '''
 ################################################################################################################
 #GPS konfigurace a inicializace:
                 
@@ -270,11 +279,13 @@ class OreonApp(MDApp):
     
     def submit_create(self):
         try:
-            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0:
+            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0 and self.root.get_screen('create').ids.tname.text != "":
             
                 self.root.current = "createqr"
                 self.a = 0
                 self.checkpoints = int(self.root.get_screen('create').ids.tcheckpoints.text)
+                self.trackname = self.root.get_screen('create').ids.tname.text
+                self.trackdesc = self.root.get_screen('create').ids.tdesc.text
                 self.infoLabel = MDLabel(text='Zde si můžete vytvořit a stáhnout QR kódy jeden po druhém .', font_size=sp(60), color=(1,1,1,1), markup='True', halign='center')
                 self.infoLabel.pos_hint = {"center_x": .5, "center_y": .7}
                 self.root.get_screen('createqr').ids.floatqr.add_widget(self.infoLabel)
@@ -287,9 +298,24 @@ class OreonApp(MDApp):
                     pass
                 self.generated = False
         except:
-            print("Invalid value")
+            self.fade = 1
+            self.error = Label(text='Prosím zadejte název trasy a počet stanovišť (Musí být čislo)', font_size=dp(15), halign='center', valign='middle', color=(1,0,0,1), markup='True')
+            self.error.pos_hint ={'center_x': 0.5, 'center_y': 0.25}
+            self.root.get_screen('create').ids.floatcr.add_widget(self.error)
+            Clock.schedule_once(self.fadecreatelabel, 5)
 
+    def removecreatelabel(self):
+        self.root.get_screen('create').ids.floatcr.remove_widget(self.error)
 
+    def fadecreatelabel(self, dt):
+        self.error.opacity = self.fade
+        self.fade -= 0.05
+        self.fade = round(self.fade,2)
+        print(self.fade)
+        if self.fade <= 0:
+            self.removecreatelabel()
+        else:
+            Clock.schedule_once(self.fadecreatelabel, .05)
 
 
     def gen_qr(self):  
@@ -325,23 +351,22 @@ class OreonApp(MDApp):
             download_dir_path = os.path.join(dir, 'Download')
 
             if self.root.current == 'createqr':
-                print(f'Exporting checkpoint QR code as {download_dir_path}/QRCheckpoint{self.a}.png')
-                self.QR.export_to_png(filename= f'{download_dir_path}/QRCheckpoint{self.a}.png', scale=5)
+                print(f'Exporting checkpoint QR code as {download_dir_path}/{self.trackname}-QRCheckpoint{self.a}.png')
+                self.QR.export_to_png(filename= f'{download_dir_path}/{self.trackname}-QRCheckpoint{self.a}.png', scale=5)
             
             else:
                 try:
-                    print(f'Exporting track QR code as {download_dir_path}/QRTrack.png')
-                    self.QR.export_to_png(filename= f'{download_dir_path}/QRTrack.png', scale=5)
-                    
-                                        
+                    print(f'Exporting track QR code as {download_dir_path}/{self.trackname}-QR.png')
+                    self.QR.export_to_png(filename= f'{download_dir_path}/{self.trackname}-QR.png', scale=5)
+                                   
                 except:
                     print('Something went wrong with exporting track QR')
 
         else:
             path = str(Path.home() / "Downloads")
             if self.root.current == 'createqr':
-                print(f'Exporting checkpoint QR code as {path}/QRCheckpoint{self.a}.png')
-                self.QR.export_to_png(filename= f'{path}/QRCheckpoint{self.a}.png', scale=5)
+                print(f'Exporting checkpoint QR code as {path}/{self.trackname}-QRCheckpoint{self.a}.png')
+                self.QR.export_to_png(filename= f'{path}/{self.trackname}-QRCheckpoint{self.a}.png', scale=5)
                 notification.notify(
                     title = "QR downloaded",
                     message=" You can find your QR in your downloads folder" ,
@@ -350,8 +375,8 @@ class OreonApp(MDApp):
             
             else:
                 try:
-                    print(f'Exporting track QR code as {path}/QRTrack.png')
-                    self.QR.export_to_png(filename= f'{path}/QRTrack.png', scale=5)
+                    print(f'Exporting track QR code as {path}/{self.trackname}-QR.png')
+                    self.QR.export_to_png(filename= f'{path}/{self.trackname}-QR.png', scale=5)
                     notification.notify(
                         title = "QR downloaded",
                         message=" You can find your QR in your downloads folder" ,
@@ -568,7 +593,7 @@ class OreonApp(MDApp):
         print(f"EpinLon: {self.EPinLon}")
         self.PinString = "-".join(str(element) for element in self.TrackPins)
 
-        self.String =-f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}"
+        self.String =-f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}-{self.trackname}-{self.trackdesc}"
 
         self.root.current = "trackqr"
         print(self.String)
