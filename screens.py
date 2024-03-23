@@ -208,6 +208,8 @@ class ScanQRCreate(Screen):
        
 
     def proc_track_string(self):
+        #Funkce na rozkládání řetězce na jednotlivé údaje
+        #Příklad načteného řetezce: 4-14.7-7.5-14.8-7.9-14.9-8.0-15.0-8.1-15.1-9.2-14.3-8.2-Testing@Track-Description
 
         RawString = self.qrdata
         ArrString = []
