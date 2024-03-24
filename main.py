@@ -279,7 +279,15 @@ class OreonApp(MDApp):
     
     def submit_create(self):
         try:
-            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0 and self.root.get_screen('create').ids.tname.text != "":
+            self.root.get_screen('create').ids.floatcr.remove_widget(self.error)
+        except:
+            pass
+        try:
+            self.root.get_screen('create').ids.floatcr.remove_widget(self.error1)
+        except:
+            pass
+        try:
+            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0 and int(self.root.get_screen('create').ids.tcheckpoints.text) < 50 and self.root.get_screen('create').ids.tname.text != " ":
             
                 self.root.current = "createqr"
                 self.a = 0
@@ -296,7 +304,13 @@ class OreonApp(MDApp):
                     self.root.get_screen('createqr').ids.floatqr.remove_widget(self.infoLabel)
                 else:
                     pass
-                self.generated = False
+            else:
+                self.fade = 1
+                self.error1 = Label(text='Prosím zadejte název trasy a počet stanovišť (Musí být čislo)', font_size=dp(15), halign='center', valign='middle', color=(1,0,0,1), markup='True')
+                self.error1.pos_hint ={'center_x': 0.5, 'center_y': 0.25}
+                self.root.get_screen('create').ids.floatcr.add_widget(self.error1)
+                Clock.schedule_once(self.fadecreatelabel, 5)
+            self.generated = False
         except:
             self.fade = 1
             self.error = Label(text='Prosím zadejte název trasy a počet stanovišť (Musí být čislo)', font_size=dp(15), halign='center', valign='middle', color=(1,0,0,1), markup='True')
@@ -305,10 +319,18 @@ class OreonApp(MDApp):
             Clock.schedule_once(self.fadecreatelabel, 5)
 
     def removecreatelabel(self):
-        self.root.get_screen('create').ids.floatcr.remove_widget(self.error)
+        try:
+            self.root.get_screen('create').ids.floatcr.remove_widget(self.error)
+            self.root.get_screen('create').ids.floatcr.remove_widget(self.error1)
+        except:
+            pass
 
     def fadecreatelabel(self, dt):
-        self.error.opacity = self.fade
+        try:
+            self.error.opacity = self.fade
+            self.error1.opacity = self.fade
+        except:
+            pass
         self.fade -= 0.05
         self.fade = round(self.fade,2)
         if self.fade <= 0:
