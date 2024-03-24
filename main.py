@@ -24,6 +24,8 @@ if platform == 'android':
     import android
 import math
 
+
+
 def android_start_service(name):  
         from android import mActivity  
         from jnius import autoclass  
@@ -287,7 +289,7 @@ class OreonApp(MDApp):
         except:
             pass
         try:
-            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0 and int(self.root.get_screen('create').ids.tcheckpoints.text) < 50 and self.root.get_screen('create').ids.tname.text != " ":
+            if int(self.root.get_screen('create').ids.tcheckpoints.text) > 0 and int(self.root.get_screen('create').ids.tcheckpoints.text) < 50 and self.root.get_screen('create').ids.tname.text != "":
             
                 self.root.current = "createqr"
                 self.a = 0
