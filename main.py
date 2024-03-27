@@ -72,6 +72,7 @@ class OreonApp(MDApp):
             self.LineDraw = LineDrawLayer()
             self.observations = []
             self.GPSonBackground = False
+            self.startplaced = False
             if platform == 'android':
                 self.start_service()
 
@@ -280,6 +281,7 @@ class OreonApp(MDApp):
 #Funkce generátoru QR kódů:
     
     def submit_create(self):
+        
         try:
             self.root.get_screen('create').ids.floatcr.remove_widget(self.error)
         except:
@@ -524,6 +526,19 @@ class OreonApp(MDApp):
             self.minutes = 0
             self.hours = 0
             self.stopwatch.text = '00:00:00'
+            try:
+                for marker in self.ExistingMarkers:
+                    self.mapviewRun.remove_marker(marker)
+                self.ExistingMarkers = []
+            except:
+                print("Something went wrong with removing the pins")
+            
+            try:
+                for marker in self.ExistingMarkersPreview:
+                    self.mapviewPreview.remove_marker(marker)
+                self.ExistingMarkersPreview = []
+            except:
+                print("Something went wrong with removing the pins")
 
             try:
                 self.root.get_screen('preview').remove_widget(self.stopwatch)
@@ -534,6 +549,7 @@ class OreonApp(MDApp):
 ################################################################################################################
 #Vytváření pinů pro trasování:
     def placePin(self):
+        self.mapviewPreview = self.root.get_screen('preview').ids.mapview
         if platform == 'android':
             try:
                 if self.gpslat == 0:
@@ -575,16 +591,20 @@ class OreonApp(MDApp):
             try:
                 if self.gpslat == 0:
                     self.waitingforgps = True
-                else:      
-                    self.SPinLat = self.gpslat
-                    self.SPinLon = self.gpslon
-                    self.SPin = MapMarker(lat=self.SPinLat, lon=self.SPinLon, source= "data/startpin.png")
-                    self.mapviewTrack.add_marker(self.SPin)
-                    print("Starter Pin added")
-                    self.first = False
-                    self.mapviewTrack.center_on(self.gpslat, self.gpslon)
-                    self.waitingforgps = False
-                    self.CreateExistingMarkers.append(self.SPin)
+                else:
+                    if self.startplaced == False:      
+                        self.SPinLat = self.gpslat
+                        self.SPinLon = self.gpslon
+                        self.SPin = MapMarker(lat=self.SPinLat, lon=self.SPinLon, source= "data/startpin.png")
+                        self.mapviewTrack.add_marker(self.SPin)
+                        print("Starter Pin added")
+                        self.first = False
+                        self.mapviewTrack.center_on(self.gpslat, self.gpslon)
+                        self.waitingforgps = False
+                        self.CreateExistingMarkers.append(self.SPin)
+                        self.startplaced = True
+                    else:
+                        pass
             except:
                 print("Waiting for initial location to place starting pin.")
                 self.waitingforgps = True
@@ -616,7 +636,7 @@ class OreonApp(MDApp):
         print(f"EpinLon: {self.EPinLon}")
         self.PinString = "-".join(str(element) for element in self.TrackPins)
 
-        self.String =-f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}-{self.trackname}-{self.trackdesc}"
+        self.String = f"{self.TrackPointCounter}-{self.PinString}-{self.SPinLat}-{self.SPinLon}-{self.EPinLat}-{self.EPinLon}-{self.trackname}-{self.trackdesc}"
 
         self.root.current = "trackqr"
         print(self.String)
@@ -626,7 +646,7 @@ class OreonApp(MDApp):
         self.CreateExistingMarkers = []
         print('Removing pins')
         self.LineDraw.unload()
-
+        self.startplaced = False
 
 if __name__ == '__main__':
     OreonApp().run()
