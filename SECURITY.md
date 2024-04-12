@@ -1,5 +1,15 @@
 # Security Policy
 
+## Access to the device
+
+Oreon Runs uses Wifi, GPS and storage access to work properly. Wifi is used to properly load map data, GPS is used to properly track your movement on the run and storage is used only for storing exported QR codes of tracks and checkpoints with user's interaction. All access is necessary for the proper functionality of the aplication and is only sharing necesarry data locally. GPS location and storage are not shared in any way.
+
+
+## Data Collection
+
+This aplication doesn't share any data whatsoever. All data collected by the aplications are stored only locally for the necessary functions only. 
+
+
 ## Supported Versions
 
 Any version bellow 1.0.1 is officially **not** supported as a secure and LTS version due to developement reasons. Versions above 1.0.1 are the official versions that are securely supported.
